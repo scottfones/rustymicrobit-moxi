@@ -1,31 +1,19 @@
 use defmt::info;
-use embassy_embedded_hal::shared_bus::asynch::i2c::I2cDevice;
-use embassy_nrf::peripherals::{P0_26, P1_00, TWISPI0};
-use embassy_nrf::twim::Twim;
-use embassy_nrf::{Peri, bind_interrupts, twim};
-use embassy_sync::blocking_mutex::raw::NoopRawMutex;
-use embassy_sync::mutex::Mutex;
 use embassy_time::{Delay, Timer};
 use libscd::asynchronous::scd4x::Scd4x;
-use static_cell::StaticCell;
-
-static I2C_BUS: StaticCell<Mutex<NoopRawMutex, Twim<TWISPI0>>> = StaticCell::new();
+use microbit_bsp::embassy_nrf::peripherals::{P0_26, P1_00, TWISPI0};
+use microbit_bsp::embassy_nrf::twim::Twim;
+use microbit_bsp::embassy_nrf::{bind_interrupts, twim};
 
 #[embassy_executor::task]
-pub async fn sense_i2c_task(
-    twi: Peri<'static, TWISPI0>,
-    sda: Peri<'static, P1_00>,
-    scl: Peri<'static, P0_26>,
-) {
+pub async fn sense_i2c_task(twi: TWISPI0, sda: P1_00, scl: P0_26) {
     bind_interrupts!(struct IrqsCO2 {
         TWISPI0 => twim::InterruptHandler<TWISPI0>;
     });
     let i2c_config = twim::Config::default();
-    let i2c = Twim::new(twi, IrqsCO2, sda, scl, i2c_config, &mut []);
-    let i2c_bus = I2C_BUS.init(Mutex::new(i2c));
+    let i2c = Twim::new(twi, IrqsCO2, sda, scl, i2c_config);
 
-    let i2c_co2 = I2cDevice::new(i2c_bus);
-    let mut scd = Scd4x::new(i2c_co2, Delay);
+    let mut scd = Scd4x::new(i2c, Delay);
     Timer::after_millis(50).await;
 
     // When re-programming, the controller will be restarted,
