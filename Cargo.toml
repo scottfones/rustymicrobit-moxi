@@ -19,6 +19,7 @@ embassy-time = { version = "0.4.0", features = [
   "defmt",
   "defmt-timestamp-uptime",
 ] }
+heapless = { version = "0.8.0", features = ["defmt-03"] }
 libscd = { version = "0.5.1", features = ["async", "scd4x", "defmt"] }
 microbit-bsp = "0.4.0"
 panic-probe = { version = "1.0.0", features = ["print-defmt"] }
