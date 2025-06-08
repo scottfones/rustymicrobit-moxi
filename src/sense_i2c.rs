@@ -10,7 +10,7 @@ use microbit_bsp::embassy_nrf::{bind_interrupts, twim};
 const SENSE_CONSUMERS: usize = 1;
 static SENSOR_LENS: Watch<ThreadModeRawMutex, SenseData, SENSE_CONSUMERS> = Watch::new();
 
-pub fn get_receiver() -> Option<DynReceiver<'static, SenseData>> {
+pub fn get_sensor_receiver() -> Option<DynReceiver<'static, SenseData>> {
     SENSOR_LENS.dyn_receiver()
 }
 
@@ -87,7 +87,6 @@ pub async fn sense_i2c_task(twi: TWISPI0, sda: P1_00, scl: P0_26) {
             );
             tx.send(sense_data);
         }
-
-        Timer::after_millis(10_000).await;
+        Timer::after_millis(5000).await;
     }
 }
