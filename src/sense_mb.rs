@@ -19,7 +19,7 @@ pub async fn sense_mb_task() {
             let temp_f = temp_c * 9.0 / 5.0 + 32.0;
 
             info!("Microbit: {} ({})", temp_c as u16, temp_f as u16);
-            Timer::after_millis(10_000).await;
+            Timer::after_millis(5000).await;
         }
     }
 }
