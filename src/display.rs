@@ -1,10 +1,12 @@
 use core::fmt::Write;
 
+use defmt::info;
 use embassy_time::Duration;
 use heapless::String;
 use microbit_bsp::display::{Bitmap, Frame, LedMatrix};
 use microbit_bsp::embassy_nrf::gpio::Output;
 
+use crate::buttons::{ButtonState, get_buttons_receiver};
 use crate::sense_i2c::{self, SenseData};
 
 const COLS: usize = 5;
@@ -25,8 +27,8 @@ fn set_dash(sense_data: &SenseData) -> [Bitmap; ROWS] {
             row.set(2);
         }
 
-        // set humidity in bucket of 20%
-        if (sense_data.get_humid() as usize) > (20 * i) {
+        // set humidity in bucket of 10%
+        if (sense_data.get_humid() as usize) >= (30 + 10 * i) {
             row.set(4);
         }
     }
@@ -47,24 +49,54 @@ fn set_dash(sense_data: &SenseData) -> [Bitmap; ROWS] {
     dash
 }
 
+async fn display_dash(matrix: &mut LedMatrix<Output<'static>, ROWS, COLS>, sense_data: &SenseData) {
+    let dash = set_dash(sense_data);
+    matrix
+        .display(Frame::new(dash), Duration::from_millis(1000))
+        .await;
+}
+
+async fn display_specific(
+    data: u16,
+    display_ms: u64,
+    matrix: &mut LedMatrix<Output<'static>, ROWS, COLS>,
+    units: &str,
+) {
+    let mut disp_txt: String<9> = String::new();
+    write!(&mut disp_txt, " {data} {units}").unwrap();
+    matrix
+        .scroll_with_speed(disp_txt.as_str(), Duration::from_millis(display_ms))
+        .await;
+    disp_txt.clear();
+}
+
 #[embassy_executor::task]
 pub async fn display_task(mut matrix: LedMatrix<Output<'static>, ROWS, COLS>) {
-    if let Some(mut rx) = sense_i2c::get_receiver() {
-        let mut disp_txt: String<6> = String::new();
+    matrix.scroll(" Power!").await;
+
+    let btn_rx = get_buttons_receiver();
+    if let Some(mut sense_rx) = sense_i2c::get_sensor_receiver() {
         loop {
-            let sense_data = rx.get().await;
-            write!(&mut disp_txt, " {}", sense_data.get_co2()).unwrap();
+            let sense_data = sense_rx.get().await;
 
-            matrix
-                .scroll_with_speed(disp_txt.as_str(), Duration::from_millis(1750))
-                .await;
-            disp_txt.clear();
-
-            let dash = set_dash(&sense_data);
-
-            matrix
-                .display(Frame::new(dash), Duration::from_millis(10_000))
-                .await;
+            match btn_rx.try_receive() {
+                Ok(ButtonState::A) => {
+                    info!("Button A: Display Temp F");
+                    let (display_ms, units) = (2750, "F");
+                    display_specific(sense_data.get_temp_f(), display_ms, &mut matrix, units).await;
+                    continue;
+                }
+                Ok(ButtonState::B) => {
+                    info!("Button B: Display CO2 PPM");
+                    let (display_ms, units) = (4500, "ppm");
+                    display_specific(sense_data.get_co2(), display_ms, &mut matrix, units).await;
+                    continue;
+                }
+                // Only possible error is TryReceiveError, indicating an empty buffer
+                Err(_) => {
+                    display_dash(&mut matrix, &sense_data).await;
+                }
+            }
         }
     }
 }
