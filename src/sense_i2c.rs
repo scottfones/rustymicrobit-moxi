@@ -8,10 +8,10 @@ use microbit_bsp::embassy_nrf::twim::Twim;
 use microbit_bsp::embassy_nrf::{bind_interrupts, twim};
 
 const SENSE_CONSUMERS: usize = 1;
-static SensorLens: Watch<ThreadModeRawMutex, SenseData, SENSE_CONSUMERS> = Watch::new();
+static SENSOR_LENS: Watch<ThreadModeRawMutex, SenseData, SENSE_CONSUMERS> = Watch::new();
 
 pub fn get_receiver() -> Option<DynReceiver<'static, SenseData>> {
-    SensorLens.dyn_receiver()
+    SENSOR_LENS.dyn_receiver()
 }
 
 #[derive(Clone, Copy)]
@@ -25,7 +25,7 @@ pub struct SenseData {
 impl SenseData {
     fn new(co2: u16, humid: f32, temp_c: f32, temp_f: f32) -> Self {
         SenseData {
-            co2: (co2 as u16),
+            co2,
             humid: (humid as u16),
             temp_c: (temp_c as u16),
             temp_f: (temp_f as u16),
@@ -70,7 +70,7 @@ pub async fn sense_i2c_task(twi: TWISPI0, sda: P1_00, scl: P0_26) {
         defmt::panic!("Failed to start periodic measurement: {:?}", e);
     }
 
-    let tx = SensorLens.sender();
+    let tx = SENSOR_LENS.sender();
     loop {
         if scd.data_ready().await.unwrap() {
             let m = scd.read_measurement().await.unwrap();
