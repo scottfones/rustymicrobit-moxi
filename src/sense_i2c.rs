@@ -31,9 +31,25 @@ pub async fn sense_i2c_task(twi: TWISPI0, sda: P1_00, scl: P0_26) {
     // prevent the rest of the commands failing.
     _ = scd.stop_periodic_measurement().await;
 
-    info!("Sensor serial number: {:?}", scd.serial_number().await);
-    if let Err(e) = scd.start_periodic_measurement().await {
-        defmt::panic!("Failed to start periodic measurement: {:?}", e);
+    if let Ok(Some(variant)) = scd.sensor_variant().await {
+        use libscd::SensorVariant::*;
+        match variant {
+            Scd40 => info!("CO2 Sensor: SCD-40"),
+            Scd41 => info!("CO2 Sensor: SCD-41"),
+            Scd43 => info!("CO2 Sensor: SCD-43"),
+            _ => info!("CO2 Sensor: Unknown"),
+        }
+    }
+
+    info!("CO2 Sensor SN: {:?}", scd.serial_number().await.unwrap());
+
+    if let Err(e) = scd.start_low_power_periodic_measurement().await {
+        defmt::panic!(
+            "CO2 Sensor: Failed to start low-power periodic measurement mode: {:?}",
+            e
+        );
+    } else {
+        info!("CO2 Sensor: Initiated low-power periodic measurement mode");
     }
 
     let tx = SENSOR_LENS.sender();
@@ -48,6 +64,6 @@ pub async fn sense_i2c_task(twi: TWISPI0, sda: P1_00, scl: P0_26) {
             );
             tx.send(m);
         }
-        Timer::after_millis(5000).await;
+        Timer::after_millis(30_000).await;
     }
 }
