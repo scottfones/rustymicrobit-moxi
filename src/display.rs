@@ -33,8 +33,8 @@ fn set_dash(m: &Measurement) -> [Bitmap; ROWS] {
             row.set(2);
         }
 
-        // set humidity in bucket of 10%
-        if (m.humidity as usize) >= (30 + 10 * i) {
+        // set humidity in buckets of 20%, {[20,80], 90}
+        if (m.humidity as usize) >= (20 + 20 * i) || (i == 4 && (m.humidity as usize) >= 90) {
             row.set(4);
         }
     }
