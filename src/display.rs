@@ -8,7 +8,7 @@ use microbit_bsp::display::{Bitmap, Frame, LedMatrix};
 use microbit_bsp::embassy_nrf::gpio::Output;
 
 use crate::buttons::{ButtonState, get_buttons_receiver};
-use crate::sense_i2c;
+use crate::sense_co2;
 
 const COLS: usize = 5;
 const ROWS: usize = 5;
@@ -83,7 +83,7 @@ pub async fn display_task(mut matrix: LedMatrix<Output<'static>, ROWS, COLS>) {
     matrix.scroll(" Power!").await;
 
     let btn_rx = get_buttons_receiver();
-    if let Some(mut sense_rx) = sense_i2c::get_sensor_receiver() {
+    if let Some(mut sense_rx) = sense_co2::get_sensor_receiver() {
         loop {
             let m = sense_rx.get().await;
 
