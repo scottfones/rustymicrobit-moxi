@@ -4,6 +4,8 @@ use microbit_bsp::embassy_nrf::peripherals::TEMP;
 use microbit_bsp::embassy_nrf::temp::Temp;
 use microbit_bsp::embassy_nrf::{bind_interrupts, temp};
 
+use crate::POWER_MODE;
+
 #[embassy_executor::task]
 pub async fn sense_mb_task() {
     bind_interrupts!(struct IrqsTemp {
@@ -13,13 +15,19 @@ pub async fn sense_mb_task() {
         let p_temp = TEMP::steal();
         let mut temp = Temp::new(p_temp, IrqsTemp);
 
+        use crate::PowerMode::*;
+        let loop_delay = match POWER_MODE {
+            HighPower => 5_000,
+            LowPower => 30_000,
+        };
+
         loop {
             let value = temp.read().await;
             let temp_c = value.to_num::<f32>();
             let temp_f = temp_c * 9.0 / 5.0 + 32.0;
 
             info!("Microbit: {} ({})", temp_c as u16, temp_f as u16);
-            Timer::after_millis(30_000).await;
+            Timer::after_millis(loop_delay).await;
         }
     }
 }
