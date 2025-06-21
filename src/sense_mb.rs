@@ -17,8 +17,8 @@ pub async fn sense_mb_task() {
 
         use crate::PowerMode::*;
         let loop_delay = match POWER_MODE {
-            HighPower => 5_000,
-            LowPower => 30_000,
+            High => 5_000,
+            Low => 30_000,
         };
 
         loop {
