@@ -4,6 +4,7 @@
 mod buttons;
 mod display;
 mod sense_co2;
+mod sense_hpa;
 mod sense_mb;
 
 use defmt::info;
@@ -18,16 +19,12 @@ use microbit_bsp::embassy_nrf::{bind_interrupts, twim};
 use static_cell::{ConstStaticCell, StaticCell};
 use {defmt_rtt as _, panic_probe as _};
 
-use crate::buttons::{button_a_task, button_b_task};
-use crate::display::display_task;
-use crate::sense_co2::sense_co2_task;
-use crate::sense_mb::sense_mb_task;
-
+#[expect(unused)]
 enum PowerMode {
-    HighPower,
-    LowPower,
+    High,
+    Low,
 }
-static POWER_MODE: PowerMode = PowerMode::HighPower;
+static POWER_MODE: PowerMode = PowerMode::Low;
 
 static I2C_BUS: StaticCell<Mutex<NoopRawMutex, Twim<TWISPI0>>> = StaticCell::new();
 
@@ -35,10 +32,10 @@ static I2C_BUS: StaticCell<Mutex<NoopRawMutex, Twim<TWISPI0>>> = StaticCell::new
 async fn main(spawner: Spawner) {
     info!("Starting...");
     let b = Microbit::default();
-    spawner.must_spawn(sense_mb_task());
-    spawner.must_spawn(display_task(b.display));
-    spawner.must_spawn(button_a_task(b.btn_a));
-    spawner.must_spawn(button_b_task(b.btn_b));
+    spawner.must_spawn(sense_mb::sense_mb_task());
+    spawner.must_spawn(display::display_task(b.display));
+    spawner.must_spawn(buttons::button_a_task(b.btn_a));
+    spawner.must_spawn(buttons::button_b_task(b.btn_b));
 
     // I2C Tasks
     bind_interrupts!(struct Irqs{
@@ -58,5 +55,8 @@ async fn main(spawner: Spawner) {
     let i2c_bus = I2C_BUS.init(i2c_bus);
 
     let i2c_co2 = I2cDevice::new(i2c_bus);
-    spawner.must_spawn(sense_co2_task(i2c_co2));
+    spawner.must_spawn(sense_co2::sense_co2_task(i2c_co2));
+
+    let i2c_hpa = I2cDevice::new(i2c_bus);
+    spawner.must_spawn(sense_hpa::sense_hpa_task(i2c_hpa));
 }
