@@ -10,7 +10,7 @@ use microbit_bsp::embassy_nrf::twim::Twim;
 
 use crate::POWER_MODE;
 
-const PRESSURE_CONSUMERS: usize = 1;
+const PRESSURE_CONSUMERS: usize = 2;
 static PRESSURE_LENS: Watch<ThreadModeRawMutex, Measurement, PRESSURE_CONSUMERS> = Watch::new();
 
 pub fn get_sensor_receiver() -> Option<DynReceiver<'static, Measurement>> {
