@@ -2,6 +2,9 @@ use embassy_sync::blocking_mutex::raw::ThreadModeRawMutex;
 use embassy_sync::channel::{Channel, DynamicReceiver, DynamicSender};
 use embassy_time::Timer;
 use microbit_bsp::Button;
+use microbit_bsp::embassy_nrf::Peri;
+use microbit_bsp::embassy_nrf::gpio::{AnyPin, Input, Pull};
+use microbit_bsp::embassy_nrf::peripherals::P1_04;
 
 static BUTTONS_LENS: Channel<ThreadModeRawMutex, ButtonState, 3> = Channel::new();
 
@@ -17,6 +20,7 @@ fn get_buttons_sender() -> DynamicSender<'static, ButtonState> {
 pub enum ButtonState {
     A,
     B,
+    C,
 }
 
 #[embassy_executor::task]
@@ -36,5 +40,21 @@ pub async fn button_b_task(mut btn_b: Button) {
         btn_b.wait_for_low().await;
         tx.send(ButtonState::B).await;
         Timer::after_millis(250).await;
+    }
+}
+
+#[embassy_executor::task]
+pub async fn button_touch_task() {
+    let tx = get_buttons_sender();
+    unsafe {
+        let touch_peri = P1_04::steal();
+        let touch_any: Peri<'static, AnyPin> = touch_peri.into();
+        let mut touch_input = Input::new(touch_any, Pull::None);
+
+        loop {
+            touch_input.wait_for_falling_edge().await;
+            tx.send(ButtonState::C).await;
+            Timer::after_millis(250).await;
+        }
     }
 }
