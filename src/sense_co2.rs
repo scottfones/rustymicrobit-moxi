@@ -60,7 +60,7 @@ pub async fn sense_co2_task(i2c: I2cDevice<'static, NoopRawMutex, Twim<'static, 
                     error!("CO2 Sensor: Failed to set ambient pressure ({:?})", e);
                 }
 
-                if m_hpa.temperature - m.temperature > 0.5 {
+                if m_hpa.temperature - m.temperature > 1.0 {
                     set_temp_offset(&mut scd, m_hpa.temperature, m.temperature).await;
                 }
 
@@ -76,7 +76,7 @@ async fn set_polling(
 ) -> u64 {
     use crate::PowerMode::*;
     match POWER_MODE {
-        High => match scd.start_low_power_periodic_measurement().await {
+        High => match scd.start_periodic_measurement().await {
             Ok(_) => {
                 info!("CO2 Sensor: Initiated low-power periodic measurement mode");
                 5_000
