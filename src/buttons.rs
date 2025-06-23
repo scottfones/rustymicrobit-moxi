@@ -1,3 +1,4 @@
+use embassy_futures::select::{Either, select};
 use embassy_sync::blocking_mutex::raw::ThreadModeRawMutex;
 use embassy_sync::channel::{Channel, DynamicReceiver, DynamicSender};
 use embassy_time::Timer;
@@ -24,27 +25,23 @@ pub enum ButtonState {
 }
 
 #[embassy_executor::task]
-pub async fn button_a_task(mut btn_a: Button) {
+pub async fn buttons_task(mut btn_a: Button, mut btn_b: Button) {
     let tx = get_buttons_sender();
     loop {
-        btn_a.wait_for_low().await;
-        tx.send(ButtonState::A).await;
+        match select(btn_a.wait_for_falling_edge(), btn_b.wait_for_falling_edge()).await {
+            Either::First(_) => {
+                tx.send(ButtonState::A).await;
+            }
+            Either::Second(_) => {
+                tx.send(ButtonState::B).await;
+            }
+        }
         Timer::after_millis(250).await;
     }
 }
 
 #[embassy_executor::task]
-pub async fn button_b_task(mut btn_b: Button) {
-    let tx = get_buttons_sender();
-    loop {
-        btn_b.wait_for_low().await;
-        tx.send(ButtonState::B).await;
-        Timer::after_millis(250).await;
-    }
-}
-
-#[embassy_executor::task]
-pub async fn button_touch_task() {
+pub async fn touch_task() {
     let tx = get_buttons_sender();
     unsafe {
         let touch_peri = P1_04::steal();

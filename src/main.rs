@@ -32,11 +32,10 @@ static I2C_BUS: StaticCell<Mutex<NoopRawMutex, Twim<TWISPI0>>> = StaticCell::new
 async fn main(spawner: Spawner) {
     info!("Starting...");
     let b = Microbit::default();
-    spawner.must_spawn(sense_mb::sense_mb_task());
+    spawner.must_spawn(sense_mb::sense_mb_task()); // steals TEMP
     spawner.must_spawn(display::display_task(b.display));
-    spawner.must_spawn(buttons::button_a_task(b.btn_a));
-    spawner.must_spawn(buttons::button_b_task(b.btn_b));
-    spawner.must_spawn(buttons::button_touch_task());
+    spawner.must_spawn(buttons::buttons_task(b.btn_a, b.btn_b));
+    spawner.must_spawn(buttons::touch_task()); // steals P1.04
 
     // I2C Tasks
     bind_interrupts!(struct Irqs{
