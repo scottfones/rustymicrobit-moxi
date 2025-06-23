@@ -53,12 +53,18 @@ pub async fn sense_co2_task(i2c: I2cDevice<'static, NoopRawMutex, Twim<'static, 
                     "CO2: {}, Humidity: {}, Temperature: {} ({})",
                     m.co2, m.humidity as u16, m.temperature as u16, temp_f as u16
                 );
-                tx.send(m);
 
-                let hpa = (hpa_rx.get().await.pressure / 100.0) as u16; // read is in Pa
+                let m_hpa = hpa_rx.get().await;
+                let hpa = (m_hpa.pressure / 100.0) as u16; // read is in Pa
                 if let Err(e) = scd.set_ambient_pressure(hpa).await {
-                    error!("CO2 Sensor: Failed to set ambient pressure: {:?}", e);
+                    error!("CO2 Sensor: Failed to set ambient pressure ({:?})", e);
                 }
+
+                if m_hpa.temperature - m.temperature > 0.5 {
+                    set_temp_offset(&mut scd, m_hpa.temperature, m.temperature).await;
+                }
+
+                tx.send(m);
             }
             Timer::after_millis(loop_delay).await;
         }
@@ -70,27 +76,47 @@ async fn set_polling(
 ) -> u64 {
     use crate::PowerMode::*;
     match POWER_MODE {
-        High => {
-            if let Err(e) = scd.start_periodic_measurement().await {
-                defmt::panic!(
-                    "CO2 Sensor: Failed to start periodic measurement mode: {:?}",
-                    e
-                );
-            } else {
-                info!("CO2 Sensor: Initiated periodic measurement mode");
+        High => match scd.start_low_power_periodic_measurement().await {
+            Ok(_) => {
+                info!("CO2 Sensor: Initiated low-power periodic measurement mode");
                 5_000
             }
-        }
-        Low => {
-            if let Err(e) = scd.start_low_power_periodic_measurement().await {
-                defmt::panic!(
-                    "CO2 Sensor: Failed to start low-power periodic measurement mode: {:?}",
-                    e
-                );
-            } else {
+            Err(e) => defmt::panic!(
+                "CO2 Sensor: Failed to start low-power periodic measurement mode ({:?})",
+                e
+            ),
+        },
+        Low => match scd.start_low_power_periodic_measurement().await {
+            Ok(_) => {
                 info!("CO2 Sensor: Initiated low-power periodic measurement mode");
                 30_000
             }
-        }
+            Err(e) => defmt::panic!(
+                "CO2 Sensor: Failed to start low-power periodic measurement mode ({:?})",
+                e
+            ),
+        },
     }
+}
+
+async fn set_temp_offset(
+    scd: &mut Scd4x<I2cDevice<'static, NoopRawMutex, Twim<'static, TWISPI0>>, Delay>,
+    t_hpa: f32,
+    t_co2: f32,
+) -> u64 {
+    match scd.stop_periodic_measurement().await {
+        Ok(_) => info!("CO2 Sensor: Stopped periodic measurement for temperature calibration"),
+        Err(e) => error!("CO2 Sensor: Failed to stop periodic measurement ({:?})", e),
+    }
+
+    let offset = match scd.get_temperature_offset().await {
+        Ok(prev_offset) => t_co2 - t_hpa + prev_offset,
+        Err(e) => panic!("CO2 Sensor: Failed to get temperature offset ({:?})", e),
+    };
+
+    match scd.set_temperature_offset(offset).await {
+        Ok(_) => info!("CO2 Sensor: Set temperature offset ({})", offset),
+        Err(e) => panic!("CO2 Sensor: Failed to set temperature offset ({:?})", e),
+    }
+    set_polling(scd).await
 }
