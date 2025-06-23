@@ -36,6 +36,7 @@ async fn main(spawner: Spawner) {
     spawner.must_spawn(display::display_task(b.display));
     spawner.must_spawn(buttons::button_a_task(b.btn_a));
     spawner.must_spawn(buttons::button_b_task(b.btn_b));
+    spawner.must_spawn(buttons::button_touch_task());
 
     // I2C Tasks
     bind_interrupts!(struct Irqs{
