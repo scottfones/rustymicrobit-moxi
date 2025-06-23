@@ -32,10 +32,11 @@ pub async fn sense_hpa_task(i2c: I2cDevice<'static, NoopRawMutex, Twim<'static, 
 
     info!("Pressure Sensor: BMP581");
 
-    if let Err(e) = bmp.init().await {
-        defmt::panic!("Pressure Sensor: Failed to initialize: {:?}", e);
-    } else {
-        info!("Pressure Sensor: Initiated successfully");
+    match bmp.init().await {
+        Ok(()) => info!("Pressure Sensor: Initialized successfully"),
+        Err(e) => {
+            panic!("Pressure Sensor: Failed to initialize: {:?}", e);
+        }
     }
 
     use crate::PowerMode::*;
