@@ -17,13 +17,13 @@ fn set_dash(co2: usize, humidity: usize, temp_f: usize) -> [Bitmap; ROWS] {
 
     // set bits from bottom -> top
     for (i, row) in dash.iter_mut().rev().enumerate() {
-        // set tens digit for temp [60F-90F]
-        if temp_f > (50 + 10 * i) {
+        // set tens digit for temp [60F-90F]pacman -Syu linux-firmware
+        if temp_f >= (50 + 10 * i) {
             row.set(0);
         }
 
         // set co2 bit in buckets of 200ppm starting at 400ppm
-        if (co2) > (400 + 200 * i) {
+        if co2 >= (400 + 200 * i) {
             row.set(2);
         }
 
@@ -90,14 +90,10 @@ pub async fn display_task(mut matrix: LedMatrix<Output<'static>, ROWS, COLS>) {
     };
 
     loop {
-        let libscd::measurement::Measurement {
-            co2,
-            humidity,
-            temperature: _,
-        } = co2_rx.get().await;
+        let libscd::measurement::Measurement { co2, humidity, .. } = co2_rx.get().await;
         let bmp5::Measurement {
             temperature: temp_c,
-            pressure: _,
+            ..
         } = hpa_rx.get().await;
         let temp_f = temp_c * 9.0 / 5.0 + 32.0;
 
@@ -106,13 +102,16 @@ pub async fn display_task(mut matrix: LedMatrix<Output<'static>, ROWS, COLS>) {
                 info!("Button A: Display Temp F");
                 let (display_ms, units) = (2750, "F");
                 display_specific(temp_f as u16, display_ms, &mut matrix, units).await;
-                continue;
             }
             Ok(ButtonState::B) => {
                 info!("Button B: Display CO2 PPM");
                 let (display_ms, units) = (4500, "ppm");
                 display_specific(co2, display_ms, &mut matrix, units).await;
-                continue;
+            }
+            Ok(ButtonState::C) => {
+                info!("Button C: Display Humidity %");
+                let (display_ms, units) = (2750, "%");
+                display_specific(humidity as u16, display_ms, &mut matrix, units).await;
             }
             // Only possible error is TryReceiveError, indicating an empty buffer
             Err(_) => {
