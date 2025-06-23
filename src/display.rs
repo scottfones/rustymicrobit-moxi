@@ -17,7 +17,7 @@ fn set_dash(co2: usize, humidity: usize, temp_f: usize) -> [Bitmap; ROWS] {
 
     // set bits from bottom -> top
     for (i, row) in dash.iter_mut().rev().enumerate() {
-        // set tens digit for temp [60F-90F]pacman -Syu linux-firmware
+        // set tens digit for temp [50F-90F]
         if temp_f >= (50 + 10 * i) {
             row.set(0);
         }
