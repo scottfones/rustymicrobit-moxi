@@ -21,10 +21,10 @@ use {defmt_rtt as _, panic_probe as _};
 
 #[expect(unused)]
 enum PowerMode {
-    High,
-    Low,
+    High = 5_000,
+    Low = 30_000,
 }
-static POWER_MODE: PowerMode = PowerMode::Low;
+const POWER_MODE: PowerMode = PowerMode::Low;
 
 static I2C_BUS: StaticCell<Mutex<NoopRawMutex, Twim<TWISPI0>>> = StaticCell::new();
 
