@@ -28,24 +28,10 @@ pub async fn sense_co2_task(i2c: I2cDevice<'static, NoopRawMutex, Twim<'static, 
     if let Err(e) = scd.stop_periodic_measurement().await {
         panic!("CO2 Sensor: Failed to stop periodic measurement ({:?})", e);
     }
-    if let Err(e) = scd.set_temperature_offset(3.5).await {
-        panic!("CO2 Sensor: Failed to set temperature offset ({:?})", e);
-    }
 
-    if let Ok(Some(variant)) = scd.sensor_variant().await {
-        use libscd::SensorVariant::*;
-        match variant {
-            Scd40 => info!("CO2 Sensor: SCD-40"),
-            Scd41 => info!("CO2 Sensor: SCD-41"),
-            Scd43 => info!("CO2 Sensor: SCD-43"),
-            _ => info!("CO2 Sensor: Unknown"),
-        }
-        info!("CO2 Sensor SN: {:?}", scd.serial_number().await.unwrap());
-    } else {
-        error!("CO2 Sensor: Failed to read sensor");
-    }
-
-    let loop_delay = set_polling(&mut scd).await;
+    set_temp_offset(&mut scd).await;
+    print_device_info(&mut scd).await;
+    set_polling(&mut scd).await;
 
     let tx = CO2_LENS.sender();
     if let Some(mut hpa_rx) = sense_hpa::get_sensor_receiver() {
@@ -67,20 +53,36 @@ pub async fn sense_co2_task(i2c: I2cDevice<'static, NoopRawMutex, Twim<'static, 
 
                 tx.send(m);
             }
-            Timer::after_millis(loop_delay).await;
+            Timer::after_millis(POWER_MODE as u64).await;
         }
+    }
+}
+
+async fn print_device_info(
+    scd: &mut Scd4x<I2cDevice<'static, NoopRawMutex, Twim<'static, TWISPI0>>, Delay>,
+) {
+    if let Ok(Some(variant)) = scd.sensor_variant().await {
+        use libscd::SensorVariant::*;
+        match variant {
+            Scd40 => info!("CO2 Sensor: SCD-40"),
+            Scd41 => info!("CO2 Sensor: SCD-41"),
+            Scd43 => info!("CO2 Sensor: SCD-43"),
+            _ => info!("CO2 Sensor: Unknown"),
+        }
+        info!("CO2 Sensor SN: {:?}", scd.serial_number().await.unwrap());
+    } else {
+        error!("CO2 Sensor: Failed to read sensor");
     }
 }
 
 async fn set_polling(
     scd: &mut Scd4x<I2cDevice<'static, NoopRawMutex, Twim<'static, TWISPI0>>, Delay>,
-) -> u64 {
+) {
     use crate::PowerMode::*;
     match POWER_MODE {
         High => match scd.start_periodic_measurement().await {
             Ok(_) => {
                 info!("CO2 Sensor: Initiated periodic measurement mode");
-                5_000
             }
             Err(e) => defmt::panic!(
                 "CO2 Sensor: Failed to start periodic measurement mode ({:?})",
@@ -90,12 +92,24 @@ async fn set_polling(
         Low => match scd.start_low_power_periodic_measurement().await {
             Ok(_) => {
                 info!("CO2 Sensor: Initiated low-power periodic measurement mode");
-                30_000
             }
             Err(e) => defmt::panic!(
                 "CO2 Sensor: Failed to start low-power periodic measurement mode ({:?})",
                 e
             ),
         },
+    }
+}
+
+async fn set_temp_offset(
+    scd: &mut Scd4x<I2cDevice<'static, NoopRawMutex, Twim<'static, TWISPI0>>, Delay>,
+) {
+    use crate::PowerMode::*;
+    let offset = match POWER_MODE {
+        High => 3.5,
+        Low => 0.5,
+    };
+    if let Err(e) = scd.set_temperature_offset(offset).await {
+        panic!("CO2 Sensor: Failed to set temperature offset ({:?})", e);
     }
 }
