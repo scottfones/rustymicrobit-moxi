@@ -36,7 +36,7 @@ pub async fn buttons_task(mut btn_a: Button, mut btn_b: Button) {
                 tx.send(ButtonState::B).await;
             }
         }
-        Timer::after_millis(250).await;
+        Timer::after_millis(500).await;
     }
 }
 
@@ -51,7 +51,7 @@ pub async fn touch_task() {
         loop {
             touch_input.wait_for_falling_edge().await;
             tx.send(ButtonState::C).await;
-            Timer::after_millis(250).await;
+            Timer::after_millis(500).await;
         }
     }
 }
