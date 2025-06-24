@@ -25,7 +25,12 @@ pub async fn sense_co2_task(i2c: I2cDevice<'static, NoopRawMutex, Twim<'static, 
     // When re-programming, the controller will be restarted,
     // but not the sensor. We try to stop it in order to
     // prevent the rest of the commands failing.
-    _ = scd.stop_periodic_measurement().await;
+    if let Err(e) = scd.stop_periodic_measurement().await {
+        panic!("CO2 Sensor: Failed to stop periodic measurement ({:?})", e);
+    }
+    if let Err(e) = scd.set_temperature_offset(3.5).await {
+        panic!("CO2 Sensor: Failed to set temperature offset ({:?})", e);
+    }
 
     if let Ok(Some(variant)) = scd.sensor_variant().await {
         use libscd::SensorVariant::*;
@@ -60,10 +65,6 @@ pub async fn sense_co2_task(i2c: I2cDevice<'static, NoopRawMutex, Twim<'static, 
                     error!("CO2 Sensor: Failed to set ambient pressure ({:?})", e);
                 }
 
-                if m_hpa.temperature - m.temperature > 1.0 {
-                    set_temp_offset(&mut scd, m_hpa.temperature, m.temperature).await;
-                }
-
                 tx.send(m);
             }
             Timer::after_millis(loop_delay).await;
@@ -78,11 +79,11 @@ async fn set_polling(
     match POWER_MODE {
         High => match scd.start_periodic_measurement().await {
             Ok(_) => {
-                info!("CO2 Sensor: Initiated low-power periodic measurement mode");
+                info!("CO2 Sensor: Initiated periodic measurement mode");
                 5_000
             }
             Err(e) => defmt::panic!(
-                "CO2 Sensor: Failed to start low-power periodic measurement mode ({:?})",
+                "CO2 Sensor: Failed to start periodic measurement mode ({:?})",
                 e
             ),
         },
@@ -97,26 +98,4 @@ async fn set_polling(
             ),
         },
     }
-}
-
-async fn set_temp_offset(
-    scd: &mut Scd4x<I2cDevice<'static, NoopRawMutex, Twim<'static, TWISPI0>>, Delay>,
-    t_hpa: f32,
-    t_co2: f32,
-) -> u64 {
-    match scd.stop_periodic_measurement().await {
-        Ok(_) => info!("CO2 Sensor: Stopped periodic measurement for temperature calibration"),
-        Err(e) => error!("CO2 Sensor: Failed to stop periodic measurement ({:?})", e),
-    }
-
-    let offset = match scd.get_temperature_offset().await {
-        Ok(prev_offset) => t_co2 - t_hpa + prev_offset,
-        Err(e) => panic!("CO2 Sensor: Failed to get temperature offset ({:?})", e),
-    };
-
-    match scd.set_temperature_offset(offset).await {
-        Ok(_) => info!("CO2 Sensor: Set temperature offset ({})", offset),
-        Err(e) => panic!("CO2 Sensor: Failed to set temperature offset ({:?})", e),
-    }
-    set_polling(scd).await
 }
