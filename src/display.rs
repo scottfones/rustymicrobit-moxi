@@ -36,12 +36,12 @@ fn set_dash(co2: usize, humidity: usize, temp_f: usize) -> [Bitmap; ROWS] {
     // set bits from top -> bottom
     for (i, row) in dash.iter_mut().enumerate() {
         // set temperature secondary bit for every 2F
-        if temp_f % 10 > (2 * i) {
+        if temp_f % 10 > (2 * i) || temp_f > 99 {
             row.set(1);
         }
 
         // set co2 secondary bit in buckets of 40ppm
-        if co2 % 200 > (40 * i) {
+        if co2 % 200 > (40 * i) || co2 > 1400 {
             row.set(3);
         }
     }
