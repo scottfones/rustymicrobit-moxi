@@ -39,12 +39,6 @@ pub async fn sense_hpa_task(i2c: I2cDevice<'static, NoopRawMutex, Twim<'static, 
         }
     }
 
-    use crate::PowerMode::*;
-    let loop_delay = match POWER_MODE {
-        High => 5_000,
-        Low => 30_000,
-    };
-
     let tx = PRESSURE_LENS.sender();
     loop {
         if let Ok(m) = bmp.measure().await {
@@ -56,6 +50,6 @@ pub async fn sense_hpa_task(i2c: I2cDevice<'static, NoopRawMutex, Twim<'static, 
             );
             tx.send(m);
         }
-        Timer::after_millis(loop_delay).await;
+        Timer::after_millis(POWER_MODE as u64).await;
     }
 }
