@@ -30,7 +30,7 @@ pub async fn sense_co2_task(i2c: I2cDevice<'static, NoopRawMutex, Twim<'static, 
     }
 
     set_temp_offset(&mut scd).await;
-    print_device_info(&mut scd).await;
+    get_device_info(&mut scd).await;
     set_polling(&mut scd).await;
 
     let tx = CO2_LENS.sender();
@@ -58,7 +58,7 @@ pub async fn sense_co2_task(i2c: I2cDevice<'static, NoopRawMutex, Twim<'static, 
     }
 }
 
-async fn print_device_info(
+async fn get_device_info(
     scd: &mut Scd4x<I2cDevice<'static, NoopRawMutex, Twim<'static, TWISPI0>>, Delay>,
 ) {
     if let Ok(Some(variant)) = scd.sensor_variant().await {
@@ -107,7 +107,7 @@ async fn set_temp_offset(
     use crate::PowerMode::*;
     let offset = match POWER_MODE {
         High => 3.5,
-        Low => 0.5,
+        Low => 0.0,
     };
     if let Err(e) = scd.set_temperature_offset(offset).await {
         panic!("CO2 Sensor: Failed to set temperature offset ({:?})", e);
