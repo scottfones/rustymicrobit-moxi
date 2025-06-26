@@ -49,7 +49,7 @@ pub async fn touch_task() {
         let mut touch_input = Input::new(touch_any, Pull::None);
 
         loop {
-            touch_input.wait_for_falling_edge().await;
+            touch_input.wait_for_low().await;
             tx.send(ButtonState::C).await;
             Timer::after_millis(500).await;
         }
