@@ -29,13 +29,13 @@ Read column-by-column from left to right:
 - CO2
   - Starting from the top, each LED represents 40 ppm CO2 but starting at 0
   - \{0, 40, 80, 120, 160\}
-    - Interpret as \{20, 60, 100, 140, 180\} +/- 20
+    - Interpreted as \{20, 60, 100, 140, 180\} +/- 20
 - Humidity
   - Starting from the bottom, each LED represents 20% relative humidity except for the
     final LED indicating a relative humidity above 90%
     - A prospective particulate sensor cautions against use when the relative humidity is above 90%
   - \{20, 40, 60, 80, 90\}
-    - Interpret as \{30, 50, 70\} +/- 10, over 80, over 90
+    - Interpreted as \{30, 50, 70\} +/- 10, over 80, over 90
 
 Therefore, the display reads 73F, 960 ppm CO2, 60% relative humidity
 
