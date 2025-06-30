@@ -37,7 +37,7 @@ Read column-by-column from left to right:
   - \{20, 40, 60, 80, 90\}
     - Interpreted as \{30, 50, 70\} +/- 10, over 80, over 90
 
-Therefore, the display reads 73F, 960 ppm CO2, 60% relative humidity
+Therefore, the display reads 73F, 940 +/- 20 ppm CO2, 70% +/- 10% relative humidity
 
 ## Hardware
 
