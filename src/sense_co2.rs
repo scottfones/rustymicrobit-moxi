@@ -29,12 +29,12 @@ pub async fn sense_co2_task(i2c: I2cDevice<'static, NoopRawMutex, Twim<'static, 
         panic!("CO2 Sensor: Failed to stop periodic measurement ({:?})", e);
     }
 
-    set_temp_offset(&mut scd).await;
     get_device_info(&mut scd).await;
+    set_temp_offset(&mut scd).await;
     set_polling(&mut scd).await;
 
     let tx = CO2_LENS.sender();
-    if let Some(mut hpa_rx) = sense_hpa::get_sensor_receiver() {
+    if let Some(mut pa_rx) = sense_hpa::get_sensor_receiver() {
         loop {
             if scd.data_ready().await.unwrap() {
                 let m = scd.read_measurement().await.unwrap();
@@ -45,8 +45,8 @@ pub async fn sense_co2_task(i2c: I2cDevice<'static, NoopRawMutex, Twim<'static, 
                     m.co2, m.humidity as u16, m.temperature as u16, temp_f as u16
                 );
 
-                let m_hpa = hpa_rx.get().await;
-                let hpa = (m_hpa.pressure / 100.0) as u16; // read is in Pa
+                let m_pa = pa_rx.get().await;
+                let hpa = (m_pa.pressure / 100.0) as u16; // read is in Pa
                 if let Err(e) = scd.set_ambient_pressure(hpa).await {
                     error!("CO2 Sensor: Failed to set ambient pressure ({:?})", e);
                 }
