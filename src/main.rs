@@ -42,7 +42,7 @@ async fn main(spawner: Spawner) {
     spawner.must_spawn(buttons::buttons_task(b.btn_a, b.btn_b, btn_touch.into()));
 
     // I2C Tasks
-    let i2c_bus = create_shared_i2c_bus(b.p19, b.p20, b.twispi0);
+    let i2c_bus = i2c_init(b.p19, b.p20, b.twispi0);
 
     let i2c_co2 = I2cDevice::new(i2c_bus);
     spawner.must_spawn(sense_co2::sense_co2_task(i2c_co2));
@@ -51,7 +51,7 @@ async fn main(spawner: Spawner) {
     spawner.must_spawn(sense_pa::sense_hpa_task(i2c_hpa));
 }
 
-fn create_shared_i2c_bus(
+fn i2c_init(
     scl: Peri<'static, P0_26>,
     sda: Peri<'static, P1_00>,
     twi: Peri<'static, TWISPI0>,
