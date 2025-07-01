@@ -38,6 +38,7 @@ pub async fn sense_hpa_task(i2c: I2cDevice<'static, NoopRawMutex, Twim<'static, 
             panic!("Pressure Sensor: Failed to initialize: {:?}", e);
         }
     }
+    Timer::after_millis(POWER_MODE as u64).await;
 
     let tx = PRESSURE_LENS.sender();
     loop {
