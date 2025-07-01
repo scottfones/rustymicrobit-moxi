@@ -8,7 +8,7 @@ use libscd::measurement::Measurement;
 use microbit_bsp::embassy_nrf::peripherals::TWISPI0;
 use microbit_bsp::embassy_nrf::twim::Twim;
 
-use crate::{POWER_MODE, sense_hpa};
+use crate::{POWER_MODE, sense_pa};
 
 const CO2_CONSUMERS: usize = 1;
 static CO2_LENS: Watch<ThreadModeRawMutex, Measurement, CO2_CONSUMERS> = Watch::new();
@@ -34,7 +34,7 @@ pub async fn sense_co2_task(i2c: I2cDevice<'static, NoopRawMutex, Twim<'static, 
     set_polling(&mut scd).await;
 
     let tx = CO2_LENS.sender();
-    if let Some(mut pa_rx) = sense_hpa::get_sensor_receiver() {
+    if let Some(mut pa_rx) = sense_pa::get_sensor_receiver() {
         loop {
             if scd.data_ready().await.unwrap() {
                 let m = scd.read_measurement().await.unwrap();
