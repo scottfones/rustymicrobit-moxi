@@ -30,7 +30,7 @@ static I2C_BUS: StaticCell<Mutex<NoopRawMutex, Twim<TWISPI0>>> = StaticCell::new
 
 #[embassy_executor::main]
 async fn main(spawner: Spawner) {
-    info!("Power!!!");
+    info!("Power ON!");
     let b = Microbit::default();
 
     spawner.must_spawn(display::display_task(b.display));

@@ -79,7 +79,7 @@ async fn display_specific(
 #[embassy_executor::task]
 pub async fn display_task(mut matrix: LedMatrix<Output<'static>, ROWS, COLS>) {
     matrix.set_brightness(microbit_bsp::display::Brightness::MAX);
-    matrix.scroll(" Power!").await;
+    matrix.scroll(" Power ON!").await;
 
     let btn_rx = get_buttons_receiver();
     let Some(mut co2_rx) = sense_co2::get_sensor_receiver() else {
