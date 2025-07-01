@@ -7,7 +7,7 @@ use microbit_bsp::display::{Bitmap, Frame, LedMatrix};
 use microbit_bsp::embassy_nrf::gpio::Output;
 
 use crate::buttons::{ButtonState, get_buttons_receiver};
-use crate::{sense_co2, sense_hpa};
+use crate::{sense_co2, sense_pa};
 
 const COLS: usize = 5;
 const ROWS: usize = 5;
@@ -85,7 +85,7 @@ pub async fn display_task(mut matrix: LedMatrix<Output<'static>, ROWS, COLS>) {
     let Some(mut co2_rx) = sense_co2::get_sensor_receiver() else {
         panic!("unable to get co2 sensor receiver");
     };
-    let Some(mut hpa_rx) = sense_hpa::get_sensor_receiver() else {
+    let Some(mut hpa_rx) = sense_pa::get_sensor_receiver() else {
         panic!("unable to get hpa sensor receiver");
     };
 
