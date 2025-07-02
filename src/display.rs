@@ -85,7 +85,7 @@ pub async fn display_task(mut matrix: LedMatrix<Output<'static>, ROWS, COLS>) {
     let Some(mut co2_rx) = sense_co2::get_sensor_receiver() else {
         panic!("unable to get co2 sensor receiver");
     };
-    let Some(mut hpa_rx) = sense_pa::get_sensor_receiver() else {
+    let Some(mut pa_rx) = sense_pa::get_sensor_receiver() else {
         panic!("unable to get hpa sensor receiver");
     };
 
@@ -94,7 +94,7 @@ pub async fn display_task(mut matrix: LedMatrix<Output<'static>, ROWS, COLS>) {
         let bmp5::Measurement {
             temperature: temp_c,
             ..
-        } = hpa_rx.get().await;
+        } = pa_rx.get().await;
         let temp_f = temp_c * 9.0 / 5.0 + 32.0;
 
         match btn_rx.try_receive() {
