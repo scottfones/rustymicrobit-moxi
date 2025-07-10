@@ -5,3 +5,4 @@ pub struct BatteryService {
     #[characteristic(uuid = characteristic::BATTERY_LEVEL, read, notify, value = 100)]
     level: u8,
 }
+

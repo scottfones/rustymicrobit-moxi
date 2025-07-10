@@ -8,7 +8,6 @@ const TUS_LED: ThingyUuid = ThingyUuid(0x0301);
 const TUS_BUTTON: ThingyUuid = ThingyUuid(0x0302);
 const TUS_PIN: ThingyUuid = ThingyUuid(0x0303);
 
-
 #[gatt_service(uuid = TUS)]
 pub struct ThingyUiService {
     #[characteristic(uuid = TUS_BUTTON, notify)]

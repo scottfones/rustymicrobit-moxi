@@ -1,6 +1,7 @@
-use trouble_host::{prelude::*, types::gatt_traits::FromGattError};
+use trouble_host::prelude::*;
+use trouble_host::types::gatt_traits::FromGattError;
 
-use super::{as_bytes, ThingyUuid};
+use super::{ThingyUuid, as_bytes};
 
 pub const TSS: ThingyUuid = ThingyUuid(0x0500);
 
@@ -28,9 +29,7 @@ pub struct TssSpeaker {
 
 impl Default for TssSpeaker {
     fn default() -> Self {
-        Self {
-            pcm: [0; 273],
-        }
+        Self { pcm: [0; 273] }
     }
 }
 
@@ -59,9 +58,7 @@ pub struct TssMicrophone {
 
 impl Default for TssMicrophone {
     fn default() -> Self {
-        Self {
-            raw: [0; 131],
-        }
+        Self { raw: [0; 131] }
     }
 }
 
@@ -82,3 +79,4 @@ impl FixedGattValue for TssMicrophone {
         as_bytes(self)
     }
 }
+

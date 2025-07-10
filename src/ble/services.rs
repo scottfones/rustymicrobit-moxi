@@ -43,13 +43,18 @@ macro_rules! impl_fixedgattvalue {
         impl trouble_host::types::gatt_traits::FixedGattValue for $type {
             const SIZE: usize = core::mem::size_of::<Self>();
 
-            fn from_gatt(data: &[u8]) -> Result<Self, trouble_host::types::gatt_traits::FromGattError> {
+            fn from_gatt(
+                data: &[u8],
+            ) -> Result<Self, trouble_host::types::gatt_traits::FromGattError> {
                 if data.len() != Self::SIZE {
                     Err(trouble_host::types::gatt_traits::FromGattError::InvalidLength)
                 } else {
                     // SAFETY
-                    // - Pointer is considered "valid" as per the rules outlined for validity in std::ptr v1.82.0
-                    // - Pointer was generated from a slice of bytes matching the size of the type, and all packed C structures composed of primatives are valid for all possible configurations of bits
+                    // - Pointer is considered "valid" as per the rules outlined for validity in
+                    //   std::ptr v1.82.0
+                    // - Pointer was generated from a slice of bytes matching the size of the type,
+                    //   and all packed C structures composed of primatives are valid for all
+                    //   possible configurations of bits
                     // - PackedCStruct trait is constrained to require Copy
                     unsafe { Ok((data.as_ptr() as *const Self).read_unaligned()) }
                 }
@@ -66,10 +71,5 @@ pub const fn as_bytes<T>(t: &T) -> &[u8] {
     // SAFETY
     // - Slice is of type u8 so data is guaranteed valid for reads of any length
     // - Data and len are tied to the address and size of the type
-    unsafe { 
-        core::slice::from_raw_parts(
-            (t as *const T) as *const u8,
-            core::mem::size_of::<T>()
-        )
-    }
+    unsafe { core::slice::from_raw_parts((t as *const T) as *const u8, core::mem::size_of::<T>()) }
 }

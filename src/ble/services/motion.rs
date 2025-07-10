@@ -1,9 +1,9 @@
 use microbit_bsp::lsm303agr::Acceleration;
-use trouble_host::{prelude::*, types::gatt_traits::FromGattError};
-
-use crate::impl_fixedgattvalue;
+use trouble_host::prelude::*;
+use trouble_host::types::gatt_traits::FromGattError;
 
 use super::ThingyUuid;
+use crate::impl_fixedgattvalue;
 
 pub const TMS: ThingyUuid = ThingyUuid(0x0400);
 
@@ -86,3 +86,4 @@ impl From<Acceleration> for TmsGravity {
 }
 
 impl_fixedgattvalue!(TmsGravity);
+

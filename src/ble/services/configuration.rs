@@ -1,9 +1,8 @@
 use heapless::String;
 use trouble_host::prelude::*;
 
-use crate::impl_fixedgattvalue;
-
 use super::ThingyUuid;
+use crate::impl_fixedgattvalue;
 
 pub const TCS: ThingyUuid = ThingyUuid(0x0100);
 
@@ -44,7 +43,7 @@ pub struct ThingyConfigurationService {
 #[derive(Clone, Copy)]
 pub struct TcsAdvertisingParameters {
     interval: u16,
-    timeout: u8
+    timeout: u8,
 }
 
 impl ToTimeUnits for TcsAdvertisingParameters {
@@ -143,3 +142,4 @@ impl Default for ConnectionParameters {
         }
     }
 }
+
