@@ -1,6 +1,7 @@
 #![no_std]
 #![no_main]
 
+mod ble;
 mod buttons;
 mod display;
 mod sense_co2;
@@ -21,10 +22,10 @@ use {defmt_rtt as _, panic_probe as _};
 
 #[expect(unused)]
 enum PowerMode {
-    High = 5_000,
+    High = 10_000,
     Low = 30_000,
 }
-const POWER_MODE: PowerMode = PowerMode::Low;
+const POWER_MODE: PowerMode = PowerMode::High;
 
 static I2C_BUS: StaticCell<Mutex<NoopRawMutex, Twim<TWISPI0>>> = StaticCell::new();
 
@@ -48,7 +49,11 @@ async fn main(spawner: Spawner) {
     spawner.must_spawn(sense_co2::sense_co2_task(i2c_co2));
 
     let i2c_hpa = I2cDevice::new(i2c_bus);
-    spawner.must_spawn(sense_pa::sense_hpa_task(i2c_hpa));
+    spawner.must_spawn(sense_pa::sense_pa_task(i2c_hpa));
+
+    // BLE
+    let (sdc, mpsl) = b.ble.init(b.timer0, b.rng).unwrap();
+    ble::run(sdc, mpsl, spawner).await
 }
 
 fn i2c_init(
