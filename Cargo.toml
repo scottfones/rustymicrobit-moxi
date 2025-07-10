@@ -1,11 +1,11 @@
 [package]
 name = "rustymicrobit-moxi"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2024"
 
 [dependencies]
 bmp5 = { version = "0.2.2", features = ["defmt"] }
-cortex-m = { version = "0.7.7", features = ["critical-section-single-core"] }
+cortex-m = "0.7.7"
 cortex-m-rt = "0.7.5"
 defmt = "1.0.1"
 defmt-rtt = "1.0.0"
@@ -22,13 +22,17 @@ embassy-time = { version = "0.4.0", features = [
   "defmt-timestamp-uptime",
 ] }
 heapless = { version = "0.8.0", features = ["defmt-03"] }
+libm = "0.2.15"
 libscd = { version = "0.5.1", features = ["async", "scd4x", "defmt"] }
-microbit-bsp = "0.4.0"
+microbit-bsp = { version = "0.4.0", features = ["trouble"] }
 panic-probe = { version = "1.0.0", features = ["print-defmt"] }
 static_cell = "2.1.1"
+trouble-host = { version = "0.2.3", features = ["defmt"] }
 
 [patch.crates-io]
 microbit-bsp = { git = "https://github.com/lulf/microbit-bsp.git", rev = "19d555bfbbcfa39db6aac467673386662c39e299" }
+nrf-sdc = { git = "https://github.com/alexmoon/nrf-sdc.git", rev = "823c7522b7f63a8b53b4f15f59946d04a84ff19c" }
+nrf-mpsl = { git = "https://github.com/alexmoon/nrf-sdc.git", rev = "823c7522b7f63a8b53b4f15f59946d04a84ff19c" }
 
 embassy-executor = { git = "https://github.com/embassy-rs/embassy.git", rev = "206a324cf4d612122356fb350b4a3b56391d6f20" }
 embassy-embedded-hal = { git = "https://github.com/embassy-rs/embassy.git", rev = "206a324cf4d612122356fb350b4a3b56391d6f20" }
