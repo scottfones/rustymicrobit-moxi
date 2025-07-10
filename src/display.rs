@@ -90,12 +90,8 @@ pub async fn display_task(mut matrix: LedMatrix<Output<'static>, ROWS, COLS>) {
     };
 
     loop {
-        let libscd::measurement::Measurement { co2, humidity, .. } = co2_rx.get().await;
-        let bmp5::Measurement {
-            temperature: temp_c,
-            ..
-        } = pa_rx.get().await;
-        let temp_f = temp_c * 9.0 / 5.0 + 32.0;
+        let sense_co2::Co2Measurement { co2, humidity, .. } = co2_rx.get().await;
+        let sense_pa::PressureMeasurement { temp_f, .. } = pa_rx.get().await;
 
         match btn_rx.try_receive() {
             Ok(ButtonState::A) => {
