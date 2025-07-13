@@ -138,7 +138,7 @@ async fn set_temp_offset(
 ) {
     use crate::PowerMode::*;
     let offset = match POWER_MODE {
-        High => 2.9,
+        High => 3.0,
         Low => 0.0,
     };
     if let Err(e) = scd.set_temperature_offset(offset).await {
