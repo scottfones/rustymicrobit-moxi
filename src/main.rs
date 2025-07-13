@@ -25,7 +25,7 @@ enum PowerMode {
     High = 10_000,
     Low = 30_000,
 }
-const POWER_MODE: PowerMode = PowerMode::High;
+const POWER_MODE: PowerMode = PowerMode::Low;
 
 static I2C_BUS: StaticCell<Mutex<NoopRawMutex, Twim<TWISPI0>>> = StaticCell::new();
 
