@@ -7,7 +7,7 @@ use microbit_bsp::embassy_nrf::{Peri, bind_interrupts, temp};
 use crate::POWER_MODE;
 
 // FICR (Factory Information Configuration Registers) base address
-const FICR_BASE: u32 = 0x10000000;
+const FICR_BASE: u32 = 0x1000_0000;
 const FICR_DEVICEID: [u32; 2] = [
     FICR_BASE + 0x060, // DEVICEID[0]
     FICR_BASE + 0x064, // DEVICEID[1]
@@ -15,8 +15,8 @@ const FICR_DEVICEID: [u32; 2] = [
 
 fn get_serial_number() -> u32 {
     let device_id = unsafe {
-        let deviceid0 = core::ptr::read_volatile(FICR_DEVICEID[0] as *const u32) as u64;
-        let deviceid1 = core::ptr::read_volatile(FICR_DEVICEID[1] as *const u32) as u64;
+        let deviceid0 = u64::from(core::ptr::read_volatile(FICR_DEVICEID[0] as *const u32));
+        let deviceid1 = u64::from(core::ptr::read_volatile(FICR_DEVICEID[1] as *const u32));
 
         // Combine the two 32-bit values into a 64-bit device ID
         (deviceid1 << 32) | deviceid0
@@ -24,7 +24,7 @@ fn get_serial_number() -> u32 {
 
     // The micro:bit serial number is typically the lower 32 bits formatted as
     // decimal
-    (device_id & 0xFFFFFFFF) as u32
+    (device_id & 0xFFFF_FFFF) as u32
 }
 
 #[embassy_executor::task]

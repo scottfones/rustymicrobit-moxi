@@ -4,7 +4,6 @@ use embassy_sync::blocking_mutex::raw::{NoopRawMutex, ThreadModeRawMutex};
 use embassy_sync::watch::{DynReceiver, Watch};
 use embassy_time::{Delay, Timer};
 use libscd::asynchronous::scd4x::Scd4x;
-use microbit_bsp::embassy_nrf::peripherals::TWISPI0;
 use microbit_bsp::embassy_nrf::twim::Twim;
 
 use crate::{POWER_MODE, sense_pa};
@@ -46,7 +45,7 @@ impl Co2Measurement {
 }
 
 #[embassy_executor::task]
-pub async fn sense_co2_task(i2c: I2cDevice<'static, NoopRawMutex, Twim<'static, TWISPI0>>) {
+pub async fn sense_co2_task(i2c: I2cDevice<'static, NoopRawMutex, Twim<'static>>) {
     let mut scd = Scd4x::new(i2c, Delay);
     Timer::after_millis(50).await;
 
@@ -54,7 +53,7 @@ pub async fn sense_co2_task(i2c: I2cDevice<'static, NoopRawMutex, Twim<'static, 
     // but not the sensor. We try to stop it in order to
     // prevent the rest of the commands failing.
     if let Err(e) = scd.stop_periodic_measurement().await {
-        panic!("CO2 Sensor: Failed to stop periodic measurement ({:?})", e);
+        panic!("CO2 Sensor: Failed to stop periodic measurement ({e:?})");
     }
 
     get_device_info(&mut scd).await;
@@ -90,11 +89,9 @@ pub async fn sense_co2_task(i2c: I2cDevice<'static, NoopRawMutex, Twim<'static, 
     }
 }
 
-async fn get_device_info(
-    scd: &mut Scd4x<I2cDevice<'static, NoopRawMutex, Twim<'static, TWISPI0>>, Delay>,
-) {
+async fn get_device_info(scd: &mut Scd4x<I2cDevice<'static, NoopRawMutex, Twim<'static>>, Delay>) {
     if let Ok(Some(variant)) = scd.sensor_variant().await {
-        use libscd::SensorVariant::*;
+        use libscd::SensorVariant::{Scd40, Scd41, Scd43};
         match variant {
             Scd40 => info!("CO2 Sensor: SCD-40"),
             Scd41 => info!("CO2 Sensor: SCD-41"),
@@ -107,13 +104,11 @@ async fn get_device_info(
     }
 }
 
-async fn set_polling(
-    scd: &mut Scd4x<I2cDevice<'static, NoopRawMutex, Twim<'static, TWISPI0>>, Delay>,
-) {
-    use crate::PowerMode::*;
+async fn set_polling(scd: &mut Scd4x<I2cDevice<'static, NoopRawMutex, Twim<'static>>, Delay>) {
+    use crate::PowerMode::{High, Low};
     match POWER_MODE {
         High => match scd.start_periodic_measurement().await {
-            Ok(_) => {
+            Ok(()) => {
                 info!("CO2 Sensor: Initiated periodic measurement mode");
             }
             Err(e) => defmt::panic!(
@@ -122,7 +117,7 @@ async fn set_polling(
             ),
         },
         Low => match scd.start_low_power_periodic_measurement().await {
-            Ok(_) => {
+            Ok(()) => {
                 info!("CO2 Sensor: Initiated low-power periodic measurement mode");
             }
             Err(e) => defmt::panic!(
@@ -133,15 +128,15 @@ async fn set_polling(
     }
 }
 
-async fn set_temp_offset(
-    scd: &mut Scd4x<I2cDevice<'static, NoopRawMutex, Twim<'static, TWISPI0>>, Delay>,
-) {
-    use crate::PowerMode::*;
+async fn set_temp_offset(scd: &mut Scd4x<I2cDevice<'static, NoopRawMutex, Twim<'static>>, Delay>) {
+    use crate::PowerMode::{High, Low};
     let offset = match POWER_MODE {
         High => 3.0,
         Low => 0.0,
     };
-    if let Err(e) = scd.set_temperature_offset(offset).await {
+
+    let res = scd.set_temperature_offset(offset).await;
+    if let Err(e) = res {
         panic!("CO2 Sensor: Failed to set temperature offset ({:?})", e);
     }
 }

@@ -4,7 +4,6 @@ use embassy_embedded_hal::shared_bus::asynch::i2c::I2cDevice;
 use embassy_sync::blocking_mutex::raw::{NoopRawMutex, ThreadModeRawMutex};
 use embassy_sync::watch::{DynReceiver, Watch};
 use embassy_time::{Delay, Timer};
-use microbit_bsp::embassy_nrf::peripherals::TWISPI0;
 use microbit_bsp::embassy_nrf::twim::Twim;
 
 use crate::POWER_MODE;
@@ -54,7 +53,7 @@ const BMP5_CONFIG: bmp5::Config = bmp5::Config {
 };
 
 #[embassy_executor::task]
-pub async fn sense_pa_task(i2c: I2cDevice<'static, NoopRawMutex, Twim<'static, TWISPI0>>) {
+pub async fn sense_pa_task(i2c: I2cDevice<'static, NoopRawMutex, Twim<'static>>) {
     let mut bmp = Bmp5::new(i2c, Delay, BMP5_ADDRESS, BMP5_CONFIG);
     Timer::after_millis(50).await;
 
@@ -63,7 +62,7 @@ pub async fn sense_pa_task(i2c: I2cDevice<'static, NoopRawMutex, Twim<'static, T
     match bmp.init().await {
         Ok(()) => info!("Pressure Sensor: Initialized successfully"),
         Err(e) => {
-            panic!("Pressure Sensor: Failed to initialize: {:?}", e);
+            panic!("Pressure Sensor: Failed to initialize: {e:?}");
         }
     }
     Timer::after_millis(POWER_MODE as u64).await;
