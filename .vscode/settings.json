@@ -1,3 +1,4 @@
 {
-  "cSpell.words": ["asynch", "moxi", "rustymicrobit"]
+  "rust-analyzer.cargo.target": "thumbv7em-none-eabihf",
+  "rust-analyzer.check.command": "clippy"
 }
