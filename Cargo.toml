@@ -27,3 +27,57 @@ libscd = { version = "0.5", features = ["async", "scd4x", "defmt"] }
 microbit-bsp = { git = "https://github.com/lulf/microbit-bsp.git", rev = "c8bc66802d694d306ea02911483e89a44c939147" }
 panic-probe = { version = "1", features = ["print-defmt"] }
 static_cell = "2.1"
+
+[dev-dependencies]
+embedded-test = { version = "0.7", features = ["defmt", "embassy-010"] }
+
+[[bin]]
+name = "rustymicrobit-moxi"
+test = false
+
+[[test]]
+name = "device"
+harness = false
+
+[lints.clippy]
+# Allow hygiene
+allow_attributes = "warn"
+allow_attributes_without_reason = "warn"
+
+# Dropped futures and errors
+assertions_on_result_states = "warn"
+let_underscore_must_use = "warn"
+map_err_ignore = "warn"
+unused_result_ok = "warn"
+
+# Lint groups
+nursery = "warn"
+pedantic = "warn"
+
+# Misc
+dbg_macro = "warn"
+rc_mutex = "warn"
+
+# Numbers
+float_cmp_const = "warn"
+lossy_float_literal = "warn"
+
+# Unsafe memory
+mem_forget = "warn"
+multiple_unsafe_ops_per_block = "warn"
+undocumented_unsafe_blocks = "warn"
+unnecessary_safety_comment = "warn"
+unnecessary_safety_doc = "warn"
+
+# Unwraps, slicing and indexing
+expect_used = "warn"
+get_unwrap = "warn"
+indexing_slicing = "warn"
+panic = "warn"
+panic_in_result_fn = "warn"
+string_slice = "warn"
+todo = "warn"
+unimplemented = "warn"
+unreachable = "warn"
+unwrap_in_result = "warn"
+unwrap_used = "warn"
