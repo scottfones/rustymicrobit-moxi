@@ -3,8 +3,7 @@ use embassy_time::Timer;
 use microbit_bsp::embassy_nrf::peripherals::TEMP;
 use microbit_bsp::embassy_nrf::temp::Temp;
 use microbit_bsp::embassy_nrf::{Peri, bind_interrupts, temp};
-
-use crate::POWER_MODE;
+use rustymicrobit_moxi::power::POWER_MODE;
 
 // FICR (Factory Information Configuration Registers) base address
 const FICR_BASE: u32 = 0x1000_0000;
@@ -37,13 +36,13 @@ pub async fn sense_mb_task(p_temp: Peri<'static, TEMP>) {
     });
     let mut temp = Temp::new(p_temp, IrqsTemp);
 
-    Timer::after_millis(POWER_MODE as u64).await;
+    Timer::after(POWER_MODE.interval()).await;
     loop {
         let value = temp.read().await;
         let temp_c = value.to_num::<f32>();
         let temp_f = temp_c * 9.0 / 5.0 + 32.0;
 
         info!("Microbit: {} ({})", temp_c as u16, temp_f as u16);
-        Timer::after_millis(POWER_MODE as u64).await;
+        Timer::after(POWER_MODE.interval()).await;
     }
 }

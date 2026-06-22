@@ -5,8 +5,7 @@ use embassy_sync::blocking_mutex::raw::{NoopRawMutex, ThreadModeRawMutex};
 use embassy_sync::watch::{DynReceiver, Watch};
 use embassy_time::{Delay, Timer};
 use microbit_bsp::embassy_nrf::twim::Twim;
-
-use crate::POWER_MODE;
+use rustymicrobit_moxi::power::POWER_MODE;
 
 const PRESSURE_CONSUMERS: usize = 3;
 static PRESSURE_LENS: Watch<ThreadModeRawMutex, PressureMeasurement, PRESSURE_CONSUMERS> =
@@ -65,7 +64,7 @@ pub async fn sense_pa_task(i2c: I2cDevice<'static, NoopRawMutex, Twim<'static>>)
             panic!("Pressure Sensor: Failed to initialize: {e:?}");
         }
     }
-    Timer::after_millis(POWER_MODE as u64).await;
+    Timer::after(POWER_MODE.interval()).await;
 
     let tx = PRESSURE_LENS.sender();
     loop {
@@ -77,6 +76,6 @@ pub async fn sense_pa_task(i2c: I2cDevice<'static, NoopRawMutex, Twim<'static>>)
             );
             tx.send(pm);
         }
-        Timer::after_millis(POWER_MODE as u64).await;
+        Timer::after(POWER_MODE.interval()).await;
     }
 }

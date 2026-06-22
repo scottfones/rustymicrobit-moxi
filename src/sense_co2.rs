@@ -5,8 +5,9 @@ use embassy_sync::watch::{DynReceiver, Watch};
 use embassy_time::{Delay, Timer};
 use libscd::asynchronous::scd4x::Scd4x;
 use microbit_bsp::embassy_nrf::twim::Twim;
+use rustymicrobit_moxi::power::{POWER_MODE, PowerMode};
 
-use crate::{POWER_MODE, sense_pa};
+use crate::sense_pa;
 
 const CO2_CONSUMERS: usize = 3;
 static CO2_LENS: Watch<ThreadModeRawMutex, Co2Measurement, CO2_CONSUMERS> = Watch::new();
@@ -84,7 +85,7 @@ pub async fn sense_co2_task(i2c: I2cDevice<'static, NoopRawMutex, Twim<'static>>
 
                 tx.send(cm);
             }
-            Timer::after_millis(POWER_MODE as u64).await;
+            Timer::after(POWER_MODE.interval()).await;
         }
     }
 }
@@ -105,9 +106,8 @@ async fn get_device_info(scd: &mut Scd4x<I2cDevice<'static, NoopRawMutex, Twim<'
 }
 
 async fn set_polling(scd: &mut Scd4x<I2cDevice<'static, NoopRawMutex, Twim<'static>>, Delay>) {
-    use crate::PowerMode::{High, Low};
     match POWER_MODE {
-        High => match scd.start_periodic_measurement().await {
+        PowerMode::High => match scd.start_periodic_measurement().await {
             Ok(()) => {
                 info!("CO2 Sensor: Initiated periodic measurement mode");
             }
@@ -116,7 +116,7 @@ async fn set_polling(scd: &mut Scd4x<I2cDevice<'static, NoopRawMutex, Twim<'stat
                 e
             ),
         },
-        Low => match scd.start_low_power_periodic_measurement().await {
+        PowerMode::Low => match scd.start_low_power_periodic_measurement().await {
             Ok(()) => {
                 info!("CO2 Sensor: Initiated low-power periodic measurement mode");
             }
@@ -129,14 +129,13 @@ async fn set_polling(scd: &mut Scd4x<I2cDevice<'static, NoopRawMutex, Twim<'stat
 }
 
 async fn set_temp_offset(scd: &mut Scd4x<I2cDevice<'static, NoopRawMutex, Twim<'static>>, Delay>) {
-    use crate::PowerMode::{High, Low};
     let offset = match POWER_MODE {
-        High => 3.0,
-        Low => 0.0,
+        PowerMode::High => 3.0,
+        PowerMode::Low => 0.0,
     };
 
-    let res = scd.set_temperature_offset(offset).await;
-    if let Err(e) = res {
-        panic!("CO2 Sensor: Failed to set temperature offset ({:?})", e);
-    }
+    // let res = scd.set_temperature_offset(offset).await;
+    // if let Err(e) = res {
+    // panic!("CO2 Sensor: Failed to set temperature offset ({:?})", e);
+    //  }
 }

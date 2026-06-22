@@ -20,13 +20,6 @@ use microbit_bsp::embassy_nrf::{Peri, bind_interrupts, twim};
 use panic_probe as _;
 use static_cell::{ConstStaticCell, StaticCell};
 
-#[expect(unused)]
-enum PowerMode {
-    High = 10_000,
-    Low = 30_000,
-}
-const POWER_MODE: PowerMode = PowerMode::High;
-
 static I2C_BUS: StaticCell<Mutex<NoopRawMutex, Twim<'static>>> = StaticCell::new();
 
 #[embassy_executor::main]
