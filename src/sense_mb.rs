@@ -1,35 +1,23 @@
-use defmt::info;
 use embassy_time::Timer;
 use microbit_bsp::embassy_nrf::peripherals::TEMP;
 use microbit_bsp::embassy_nrf::temp::Temp;
 use microbit_bsp::embassy_nrf::{Peri, bind_interrupts, temp};
 use rustymicrobit_moxi::power::POWER_MODE;
 
-// FICR (Factory Information Configuration Registers) base address
-const FICR_BASE: u32 = 0x1000_0000;
-const FICR_DEVICEID: [u32; 2] = [
-    FICR_BASE + 0x060, // DEVICEID[0]
-    FICR_BASE + 0x064, // DEVICEID[1]
-];
+/// Lower 32 bits of FICR.
+const FICR_DEVICEID_0: *const u32 = core::ptr::with_exposed_provenance(0x1000_0060);
 
+/// Read microbit serial number (lower 32 bits of FICR).
 fn get_serial_number() -> u32 {
-    let device_id = unsafe {
-        let deviceid0 = u64::from(core::ptr::read_volatile(FICR_DEVICEID[0] as *const u32));
-        let deviceid1 = u64::from(core::ptr::read_volatile(FICR_DEVICEID[1] as *const u32));
-
-        // Combine the two 32-bit values into a 64-bit device ID
-        (deviceid1 << 32) | deviceid0
-    };
-
-    // The micro:bit serial number is typically the lower 32 bits formatted as
-    // decimal
-    (device_id & 0xFFFF_FFFF) as u32
+    // SAFETY: FICR is read-only at a fixed address
+    unsafe { core::ptr::read_volatile(FICR_DEVICEID_0) }
 }
 
+/// Initialize the microbit and loop temperature reads.
 #[embassy_executor::task]
 pub async fn sense_mb_task(p_temp: Peri<'static, TEMP>) {
     let serial_num = get_serial_number();
-    info!("Microbit SN: {:?}", serial_num);
+    defmt::info!("Microbit SN: {:?}", serial_num);
 
     bind_interrupts!(struct IrqsTemp {
         TEMP => temp::InterruptHandler;
@@ -42,7 +30,7 @@ pub async fn sense_mb_task(p_temp: Peri<'static, TEMP>) {
         let temp_c = value.to_num::<f32>();
         let temp_f = temp_c * 9.0 / 5.0 + 32.0;
 
-        info!("Microbit: {} ({})", temp_c as u16, temp_f as u16);
+        defmt::info!("Microbit: {=f32} ({=f32})", temp_c, temp_f);
         Timer::after(POWER_MODE.interval()).await;
     }
 }

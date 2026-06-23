@@ -31,12 +31,15 @@ static_cell = "2.1"
 [dev-dependencies]
 embedded-test = { version = "0.7", features = ["defmt", "embassy-010"] }
 
+[lib]
+test = false
+
 [[bin]]
 name = "rustymicrobit-moxi"
 test = false
 
 [[test]]
-name = "device"
+name = "sense_mb"
 harness = false
 
 [lints.clippy]
