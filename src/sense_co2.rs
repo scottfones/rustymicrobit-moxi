@@ -130,12 +130,12 @@ async fn set_polling(scd: &mut Scd4x<I2cDevice<'static, NoopRawMutex, Twim<'stat
 
 async fn set_temp_offset(scd: &mut Scd4x<I2cDevice<'static, NoopRawMutex, Twim<'static>>, Delay>) {
     let offset = match POWER_MODE {
-        PowerMode::High => 3.0,
+        PowerMode::High => 2.85,
         PowerMode::Low => 0.0,
     };
 
-    // let res = scd.set_temperature_offset(offset).await;
-    // if let Err(e) = res {
-    // panic!("CO2 Sensor: Failed to set temperature offset ({:?})", e);
-    //  }
+    let res = scd.set_temperature_offset(offset).await;
+    if let Err(e) = res {
+        panic!("CO2 Sensor: Failed to set temperature offset ({:?})", e);
+    }
 }

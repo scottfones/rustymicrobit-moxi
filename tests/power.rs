@@ -2,6 +2,7 @@
 #![no_main]
 
 use defmt_rtt as _;
+use microbit_bsp as _;
 
 #[cfg(test)]
 #[embedded_test::tests]

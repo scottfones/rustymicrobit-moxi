@@ -36,7 +36,13 @@ test = false
 
 [[bin]]
 name = "rustymicrobit-moxi"
+path = "src/main.rs"
+bench = false
 test = false
+
+[[test]]
+name = "power"
+harness = false
 
 [[test]]
 name = "sense_mb"
