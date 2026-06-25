@@ -27,7 +27,7 @@ pub async fn sense_mb_task(p_temp: Peri<'static, TEMP>) {
     Timer::after(POWER_MODE.interval()).await;
     loop {
         let value = temp.read().await;
-        let temp_c = value.to_num::<f32>() - 1.5;
+        let temp_c = value.to_num::<f32>() - 1.8;
         let temp_f = temp_c * 9.0 / 5.0 + 32.0;
 
         defmt::info!("Microbit: {=f32} ({=f32})", temp_c, temp_f);

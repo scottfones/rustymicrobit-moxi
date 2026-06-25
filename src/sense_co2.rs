@@ -5,6 +5,7 @@ use embassy_sync::watch::{DynReceiver, Watch};
 use embassy_time::{Delay, Timer};
 use libscd::asynchronous::scd4x::Scd4x;
 use microbit_bsp::embassy_nrf::twim::Twim;
+use rustymicrobit_moxi::measurement::{Co2Measurement, fahrenheit};
 use rustymicrobit_moxi::power::{POWER_MODE, PowerMode};
 
 use crate::sense_pa;
@@ -14,35 +15,6 @@ static CO2_LENS: Watch<ThreadModeRawMutex, Co2Measurement, CO2_CONSUMERS> = Watc
 
 pub fn get_sensor_receiver() -> Option<DynReceiver<'static, Co2Measurement>> {
     CO2_LENS.dyn_receiver()
-}
-
-#[derive(Clone, Copy, Debug)]
-pub struct Co2Measurement {
-    pub co2: u16,
-    pub humidity: u8,
-    pub humidity_dec: u8,
-    pub temp_c: i8,
-    pub temp_c_dec: u8,
-    pub temp_f: i8,
-    pub temp_f_dec: u8,
-}
-
-impl Co2Measurement {
-    pub fn new(co2: u16, humidity: f32, temp_c: f32) -> Self {
-        let humidity_dec = 100.0 * (humidity - libm::truncf(humidity));
-        let temp_c_dec = 100.0 * (temp_c - libm::truncf(temp_c));
-        let temp_f = temp_c * 9.0 / 5.0 + 32.0;
-        let temp_f_dec = 100.0 * (temp_f - libm::truncf(temp_f));
-        Self {
-            co2,
-            humidity: humidity as u8,
-            humidity_dec: humidity_dec as u8,
-            temp_c: temp_c as i8,
-            temp_c_dec: temp_c_dec as u8,
-            temp_f: temp_f as i8,
-            temp_f_dec: temp_f_dec as u8,
-        }
-    }
 }
 
 #[embassy_executor::task]
@@ -66,24 +38,26 @@ pub async fn sense_co2_task(i2c: I2cDevice<'static, NoopRawMutex, Twim<'static>>
         loop {
             if scd.data_ready().await.unwrap() {
                 let m = scd.read_measurement().await.unwrap();
-                let cm = Co2Measurement::new(m.co2, m.humidity, m.temperature);
+                let m_co2 = Co2Measurement::new(m.co2, m.humidity, m.temperature);
                 info!(
-                    "CO2: {}, Humidity: {}.{}, Temperature: {}.{} ({}.{})",
-                    cm.co2,
-                    cm.humidity,
-                    cm.humidity_dec,
-                    cm.temp_c,
-                    cm.temp_c_dec,
-                    cm.temp_f,
-                    cm.temp_f_dec
+                    "CO2: {=f32}, Humidity: {=f32}, Temperature: {=f32} C ({=f32} F)",
+                    m_co2.co2,
+                    m_co2.humidity,
+                    m_co2.temp_c,
+                    fahrenheit(m_co2.temp_c)
                 );
 
                 let m_pa = pa_rx.get().await;
+                #[expect(
+                    clippy::cast_possible_truncation,
+                    clippy::cast_sign_loss,
+                    reason = "hPa is 300-1250, well within u16; the cast saturates"
+                )]
                 if let Err(e) = scd.set_ambient_pressure(m_pa.hpa as u16).await {
                     error!("CO2 Sensor: Failed to set ambient pressure ({:?})", e);
                 }
 
-                tx.send(cm);
+                tx.send(m_co2);
             }
             Timer::after(POWER_MODE.interval()).await;
         }
@@ -130,7 +104,7 @@ async fn set_polling(scd: &mut Scd4x<I2cDevice<'static, NoopRawMutex, Twim<'stat
 
 async fn set_temp_offset(scd: &mut Scd4x<I2cDevice<'static, NoopRawMutex, Twim<'static>>, Delay>) {
     let offset = match POWER_MODE {
-        PowerMode::High => 2.85,
+        PowerMode::High => 2.95,
         PowerMode::Low => 0.0,
     };
 

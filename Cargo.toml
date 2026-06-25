@@ -41,6 +41,10 @@ bench = false
 test = false
 
 [[test]]
+name = "measurement"
+harness = false
+
+[[test]]
 name = "power"
 harness = false
 

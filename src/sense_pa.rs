@@ -5,6 +5,7 @@ use embassy_sync::blocking_mutex::raw::{NoopRawMutex, ThreadModeRawMutex};
 use embassy_sync::watch::{DynReceiver, Watch};
 use embassy_time::{Delay, Timer};
 use microbit_bsp::embassy_nrf::twim::Twim;
+use rustymicrobit_moxi::measurement::{PressureMeasurement, fahrenheit};
 use rustymicrobit_moxi::power::POWER_MODE;
 
 const PRESSURE_CONSUMERS: usize = 3;
@@ -13,34 +14,6 @@ static PRESSURE_LENS: Watch<ThreadModeRawMutex, PressureMeasurement, PRESSURE_CO
 
 pub fn get_sensor_receiver() -> Option<DynReceiver<'static, PressureMeasurement>> {
     PRESSURE_LENS.dyn_receiver()
-}
-
-#[derive(Clone, Copy, Debug)]
-pub struct PressureMeasurement {
-    pub hpa: i32,
-    pub hpa_dec: u8,
-    pub temp_c: i8,
-    pub temp_c_dec: u8,
-    pub temp_f: i8,
-    pub temp_f_dec: u8,
-}
-
-impl PressureMeasurement {
-    pub fn new(pa: f32, temp_c: f32) -> Self {
-        let hpa = pa / 100.0;
-        let hpa_dec = 100.0 * (hpa - libm::truncf(hpa));
-        let temp_c_dec = 100.0 * (temp_c - libm::truncf(temp_c));
-        let temp_f = temp_c * 9.0 / 5.0 + 32.0;
-        let temp_f_dec = 100.0 * (temp_f - libm::truncf(temp_f));
-        Self {
-            hpa: hpa as i32,
-            hpa_dec: hpa_dec as u8,
-            temp_c: temp_c as i8,
-            temp_c_dec: temp_c_dec as u8,
-            temp_f: temp_f as i8,
-            temp_f_dec: temp_f_dec as u8,
-        }
-    }
 }
 
 const BMP5_CONFIG: bmp5::Config = bmp5::Config {
@@ -69,12 +42,14 @@ pub async fn sense_pa_task(i2c: I2cDevice<'static, NoopRawMutex, Twim<'static>>)
     let tx = PRESSURE_LENS.sender();
     loop {
         if let Ok(m) = bmp.measure().await {
-            let pm = PressureMeasurement::new(m.pressure, m.temperature);
+            let m_pa = PressureMeasurement::new(m.pressure, m.temperature);
             info!(
-                "Pressure: {}.{}, Temperature: {}.{} ({}.{})",
-                pm.hpa, pm.hpa_dec, pm.temp_c, pm.temp_c_dec, pm.temp_f, pm.temp_f_dec
+                "Pressure: {=f32} hPa, Temperature: {=f32} C ({=f32} F)",
+                m_pa.hpa,
+                m_pa.temp_c,
+                fahrenheit(m_pa.temp_c)
             );
-            tx.send(pm);
+            tx.send(m_pa);
         }
         Timer::after(POWER_MODE.interval()).await;
     }

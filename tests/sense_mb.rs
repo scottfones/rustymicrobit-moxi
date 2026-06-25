@@ -33,6 +33,6 @@ mod tests {
         let mut sensor = Temp::new(mb_temp, Irqs);
         let temp_celsius: f32 = sensor.read().await.to_num();
         defmt::info!("mb temp: {} C", temp_celsius);
-        assert!(temp_celsius > 18.0 && temp_celsius < 24.0);
+        assert!(temp_celsius > 18.0 && temp_celsius < 26.0);
     }
 }

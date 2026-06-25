@@ -5,6 +5,7 @@ use embassy_time::Duration;
 use heapless::String;
 use microbit_bsp::display::{Bitmap, Frame, LedMatrix};
 use microbit_bsp::embassy_nrf::gpio::Output;
+use rustymicrobit_moxi::measurement::{Co2Measurement, PressureMeasurement, fahrenheit};
 
 use crate::buttons::{ButtonState, get_buttons_receiver};
 use crate::{sense_co2, sense_pa};
@@ -90,31 +91,39 @@ pub async fn display_task(mut matrix: LedMatrix<Output<'static>, ROWS, COLS>) {
     };
 
     loop {
-        let sense_co2::Co2Measurement { co2, humidity, .. } = co2_rx.get().await;
-        let sense_pa::PressureMeasurement { temp_f, .. } = pa_rx.get().await;
+        let Co2Measurement { co2, humidity, .. } = co2_rx.get().await;
+        let PressureMeasurement { temp_c, .. } = pa_rx.get().await;
+        let temp_f = fahrenheit(temp_c);
+
+        #[expect(
+            clippy::cast_possible_truncation,
+            clippy::cast_sign_loss,
+            reason = "sensor ranges within u16"
+        )]
+        let (co2_u16, humidity_u16, temp_f_u16) = (co2 as u16, humidity as u16, temp_f as u16);
 
         match btn_rx.try_receive() {
             Ok(ButtonState::A) => {
                 info!("Button A: Display Temp F");
                 let (display_ms, units) = (2750, "F");
-                display_specific(temp_f as u16, display_ms, &mut matrix, units).await;
+                display_specific(temp_f_u16, display_ms, &mut matrix, units).await;
             }
             Ok(ButtonState::B) => {
                 info!("Button B: Display CO2 PPM");
                 let (display_ms, units) = (4500, "ppm");
-                display_specific(co2, display_ms, &mut matrix, units).await;
+                display_specific(co2_u16, display_ms, &mut matrix, units).await;
             }
             Ok(ButtonState::C) => {
                 info!("Button C: Display Humidity %");
                 let (display_ms, units) = (2750, "%");
-                display_specific(humidity as u16, display_ms, &mut matrix, units).await;
+                display_specific(humidity_u16, display_ms, &mut matrix, units).await;
             }
             // Only possible error is TryReceiveError, indicating an empty buffer
             Err(_) => {
                 display_dash(
-                    co2 as usize,
-                    humidity as usize,
-                    temp_f as usize,
+                    co2_u16 as usize,
+                    humidity_u16 as usize,
+                    temp_f_u16 as usize,
                     &mut matrix,
                 )
                 .await;
