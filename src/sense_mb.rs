@@ -2,6 +2,7 @@ use embassy_time::Timer;
 use microbit_bsp::embassy_nrf::peripherals::TEMP;
 use microbit_bsp::embassy_nrf::temp::Temp;
 use microbit_bsp::embassy_nrf::{Peri, bind_interrupts, temp};
+use rustymicrobit_moxi::measurement::fahrenheit;
 use rustymicrobit_moxi::power::POWER_MODE;
 
 /// Lower 32 bits of FICR.
@@ -22,15 +23,13 @@ pub async fn sense_mb_task(p_temp: Peri<'static, TEMP>) {
     bind_interrupts!(struct IrqsTemp {
         TEMP => temp::InterruptHandler;
     });
-    let mut temp = Temp::new(p_temp, IrqsTemp);
+    let mut mb_temp = Temp::new(p_temp, IrqsTemp);
 
-    Timer::after(POWER_MODE.interval()).await;
     loop {
-        let value = temp.read().await;
+        let value = mb_temp.read().await;
         let temp_c = value.to_num::<f32>() - 1.8;
-        let temp_f = temp_c * 9.0 / 5.0 + 32.0;
 
-        defmt::info!("Microbit: {=f32} ({=f32})", temp_c, temp_f);
+        defmt::info!("Microbit: {=f32} ({=f32})", temp_c, fahrenheit(temp_c));
         Timer::after(POWER_MODE.interval()).await;
     }
 }
