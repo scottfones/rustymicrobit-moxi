@@ -12,7 +12,7 @@ use rustymicrobit_moxi::power::POWER_MODE;
 /// Retries before panic.
 const INIT_ATTEMPTS_MAX: u8 = 3;
 
-/// Count of receiving tasks (`display` and `sense_co2`).
+/// Count of receiving tasks [`display` and `sense_co2`].
 const PRESSURE_CONSUMERS: usize = 2;
 
 /// SPMC for pressure measurements.
@@ -31,15 +31,14 @@ pub fn get_sensor_receiver() -> Option<DynReceiver<'static, PressureMeasurement>
     PRESSURE_LENS.dyn_receiver()
 }
 
-/// BMP581 pressure sensing task.
+/// BMP581 pressure and temperature sensing task.
 #[embassy_executor::task]
 pub async fn sense_pa_task(i2c: I2cDevice<'static, NoopRawMutex, Twim<'static>>) {
     let mut bmp = Bmp5::new(i2c, Delay, BMP5_ADDRESS, BMP5_CONFIG);
-    Timer::after_millis(50).await;
 
     defmt::info!("Pressure Sensor: BMP581");
 
-    for attempt in 1..=INIT_ATTEMPTS_MAX {
+    for init_attempt in 1..=INIT_ATTEMPTS_MAX {
         match bmp.init().await {
             Ok(()) => {
                 defmt::info!("Pressure Sensor: Initialized successfully");
@@ -47,16 +46,17 @@ pub async fn sense_pa_task(i2c: I2cDevice<'static, NoopRawMutex, Twim<'static>>)
             }
             Err(e) => {
                 defmt::error!(
-                    "Pressure Sensor init attempt {=u8} failed: {:?}",
-                    attempt,
+                    "Pressure Sensor: Init attempt {=u8} failed ({:?})",
+                    init_attempt,
                     e
                 );
-                if attempt == INIT_ATTEMPTS_MAX {
+                if init_attempt == INIT_ATTEMPTS_MAX {
                     defmt::panic!(
-                        "Pressure Sensor failed to initialize after {=u8} attempts.",
+                        "Pressure Sensor: Failed to initialize after {=u8} attempts.",
                         INIT_ATTEMPTS_MAX
                     );
                 }
+                Timer::after_millis(10).await;
             }
         }
     }
@@ -74,7 +74,7 @@ pub async fn sense_pa_task(i2c: I2cDevice<'static, NoopRawMutex, Twim<'static>>)
                 );
                 tx.send(m_pa);
             }
-            Err(e) => defmt::error!("Pressure Sensor measurement failed: {:?}", e),
+            Err(e) => defmt::error!("Pressure Sensor: Measurement failed ({:?})", e),
         }
         Timer::after(POWER_MODE.interval()).await;
     }

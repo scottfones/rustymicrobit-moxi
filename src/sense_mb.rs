@@ -1,3 +1,5 @@
+//! Sense Task: Microbit Temperature.
+
 use embassy_time::Timer;
 use microbit_bsp::embassy_nrf::peripherals::TEMP;
 use microbit_bsp::embassy_nrf::temp::Temp;
@@ -14,7 +16,7 @@ fn get_serial_number() -> u32 {
     unsafe { core::ptr::read_volatile(FICR_DEVICEID_0) }
 }
 
-/// Initialize the microbit and loop temperature reads.
+/// Microbit temperature sensing task.
 #[embassy_executor::task]
 pub async fn sense_mb_task(p_temp: Peri<'static, TEMP>) {
     let serial_num = get_serial_number();
