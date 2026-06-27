@@ -23,7 +23,7 @@ embassy-time = { version = "0.5", features = [
 ] }
 heapless = { version = "0.9", features = ["defmt"] }
 libm = "0.2"
-libscd = { version = "0.5", features = ["async", "scd4x", "defmt"] }
+libscd = { version = "0.5", features = ["async", "defmt", "scd4x", "scd41"] }
 microbit-bsp = { git = "https://github.com/lulf/microbit-bsp.git", rev = "c8bc66802d694d306ea02911483e89a44c939147" }
 panic-probe = { version = "1", features = ["print-defmt"] }
 static_cell = "2.1"
