@@ -7,6 +7,9 @@ use microbit_bsp::embassy_nrf::{Peri, bind_interrupts, temp};
 use rustymicrobit_moxi::measurement::fahrenheit;
 use rustymicrobit_moxi::power::POWER_MODE;
 
+/// Temperature offset wrt BMP581.
+const OFFSET_BMP581: f32 = 1.68;
+
 /// Lower 32 bits of FICR.
 const FICR_DEVICEID_0: *const u32 = core::ptr::with_exposed_provenance(0x1000_0060);
 
@@ -29,7 +32,7 @@ pub async fn sense_mb_task(p_temp: Peri<'static, TEMP>) {
 
     loop {
         let value = mb_temp.read().await;
-        let temp_c = value.to_num::<f32>() - 1.8;
+        let temp_c = value.to_num::<f32>() - OFFSET_BMP581;
 
         defmt::info!("Microbit: {=f32} ({=f32})", temp_c, fahrenheit(temp_c));
         Timer::after(POWER_MODE.interval()).await;

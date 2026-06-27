@@ -67,7 +67,7 @@ pub async fn sense_co2_task(i2c: I2cDevice<'static, NoopRawMutex, Twim<'static>>
         match scd.data_ready().await {
             Ok(true) => get_measurement(&co2_tx, &mut pa_rx, &mut scd).await,
             Ok(false) => defmt::trace!("CO2 Sensor: No unread data"),
-            Err(e) => defmt::debug!("CO2 Sensor: Failed device ready probe ({:?})", e),
+            Err(e) => defmt::error!("CO2 Sensor: Failed device ready probe ({:?})", e),
         }
         Timer::after(POWER_MODE.interval()).await;
     }
@@ -151,13 +151,24 @@ async fn set_polling(scd: &mut Scd4x<I2cDevice<'static, NoopRawMutex, Twim<'stat
 
 /// Set SCD4X temperature reading offset.
 async fn set_temp_offset(scd: &mut Scd4x<I2cDevice<'static, NoopRawMutex, Twim<'static>>, Delay>) {
+    /// Offset from BMP581 in High Power mode.
+    const OFFSET_BMP581: f32 = 2.92;
+
     let offset = match POWER_MODE {
-        PowerMode::High => 2.95,
+        PowerMode::High => OFFSET_BMP581,
         PowerMode::Low => 0.0,
     };
 
-    let res = scd.set_temperature_offset(offset).await;
-    if let Err(e) = res {
+    match scd.get_temperature_offset().await {
+        Ok(previous_offset) => defmt::debug!(
+            "CO2 Sensor: Setting temperature offset (old: {=f32} C, new: {=f32} C)",
+            previous_offset,
+            offset
+        ),
+        Err(e) => defmt::panic!("CO2 Sensor: Failed to probe temperature offset ({:?})", e),
+    }
+
+    if let Err(e) = scd.set_temperature_offset(offset).await {
         defmt::panic!("CO2 Sensor: Failed to set temperature offset ({:?})", e);
     }
 }
