@@ -8,7 +8,7 @@ use rustymicrobit_moxi::measurement::fahrenheit;
 use rustymicrobit_moxi::power::POWER_MODE;
 
 /// Temperature offset wrt BMP581.
-const OFFSET_BMP581: f32 = 1.68;
+const OFFSET_BMP581: f32 = 1.969;
 
 /// Lower 32 bits of FICR.
 const FICR_DEVICEID_0: *const u32 = core::ptr::with_exposed_provenance(0x1000_0060);

@@ -152,7 +152,7 @@ async fn set_polling(scd: &mut Scd4x<I2cDevice<'static, NoopRawMutex, Twim<'stat
 /// Set SCD4X temperature reading offset.
 async fn set_temp_offset(scd: &mut Scd4x<I2cDevice<'static, NoopRawMutex, Twim<'static>>, Delay>) {
     /// Offset from BMP581 in High Power mode.
-    const OFFSET_BMP581: f32 = 2.92;
+    const OFFSET_BMP581: f32 = 2.949;
 
     let offset = match POWER_MODE {
         PowerMode::High => OFFSET_BMP581,
