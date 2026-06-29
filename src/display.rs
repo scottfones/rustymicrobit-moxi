@@ -3,59 +3,21 @@ use core::fmt::Write;
 use defmt::info;
 use embassy_time::Duration;
 use heapless::String;
-use microbit_bsp::display::{Bitmap, Frame, LedMatrix};
+use microbit_bsp::display::{Frame, LedMatrix};
 use microbit_bsp::embassy_nrf::gpio::Output;
+use rustymicrobit_moxi::dashboard::{LED_COLS, LED_ROWS, construct_dashboard_rows};
 use rustymicrobit_moxi::measurement::{Co2Measurement, PressureMeasurement, fahrenheit};
 
 use crate::buttons::{ButtonState, get_buttons_receiver};
 use crate::{sense_co2, sense_pa};
 
-const COLS: usize = 5;
-const ROWS: usize = 5;
-
-fn set_dash(co2: usize, humidity: usize, temp_f: usize) -> [Bitmap; ROWS] {
-    let mut dash = [Bitmap::empty(COLS); ROWS];
-
-    // set bits from bottom -> top
-    for (i, row) in dash.iter_mut().rev().enumerate() {
-        // set tens digit for temp [50F-90F]
-        if temp_f >= (50 + 10 * i) {
-            row.set(0);
-        }
-
-        // set co2 bit in buckets of 200ppm starting at 400ppm
-        if co2 >= (400 + 200 * i) {
-            row.set(2);
-        }
-
-        // set humidity in buckets of 20%, {[20,80], 90}
-        if humidity >= (20 + 20 * i) || (i == 4 && humidity >= 90) {
-            row.set(4);
-        }
-    }
-
-    // set bits from top -> bottom
-    for (i, row) in dash.iter_mut().enumerate() {
-        // set temperature secondary bit for every 2F
-        if temp_f % 10 > (2 * i) || temp_f > 99 {
-            row.set(1);
-        }
-
-        // set co2 secondary bit in buckets of 40ppm
-        if co2 % 200 > (40 * i) || co2 > 1400 {
-            row.set(3);
-        }
-    }
-    dash
-}
-
 async fn display_dash(
-    co2: usize,
-    humidity: usize,
-    temp_f: usize,
-    matrix: &mut LedMatrix<Output<'static>, ROWS, COLS>,
+    co2: u16,
+    humidity: u8,
+    temp_f: i16,
+    matrix: &mut LedMatrix<Output<'static>, LED_ROWS, LED_COLS>,
 ) {
-    let dash = set_dash(co2, humidity, temp_f);
+    let dash = construct_dashboard_rows(co2, humidity, temp_f);
     matrix.set_brightness(microbit_bsp::display::Brightness::MIN);
     matrix
         .display(Frame::new(dash), Duration::from_millis(1000))
@@ -65,7 +27,7 @@ async fn display_dash(
 async fn display_specific(
     data: u16,
     display_ms: u64,
-    matrix: &mut LedMatrix<Output<'static>, ROWS, COLS>,
+    matrix: &mut LedMatrix<Output<'static>, LED_ROWS, LED_COLS>,
     units: &str,
 ) {
     let mut disp_txt: String<9> = String::new();
@@ -78,35 +40,37 @@ async fn display_specific(
 }
 
 #[embassy_executor::task]
-pub async fn display_task(mut matrix: LedMatrix<Output<'static>, ROWS, COLS>) {
+pub async fn display_task(mut matrix: LedMatrix<Output<'static>, LED_ROWS, LED_COLS>) {
     matrix.set_brightness(microbit_bsp::display::Brightness::MAX);
     matrix.scroll(" Power ON!").await;
 
     let btn_rx = get_buttons_receiver();
-    let Some(mut co2_rx) = sense_co2::get_sensor_receiver() else {
-        panic!("unable to get co2 sensor receiver");
-    };
-    let Some(mut pa_rx) = sense_pa::get_sensor_receiver() else {
-        panic!("unable to get hpa sensor receiver");
-    };
+    let mut co2_rx = defmt::unwrap!(
+        sense_co2::get_sensor_receiver(),
+        "unable to get co2 sensor receiver"
+    );
+    let mut pa_rx = defmt::unwrap!(
+        sense_pa::get_sensor_receiver(),
+        "unable to get hpa sensor receiver"
+    );
 
     loop {
         let Co2Measurement { co2, humidity, .. } = co2_rx.get().await;
         let PressureMeasurement { temp_c, .. } = pa_rx.get().await;
-        let temp_f = fahrenheit(temp_c);
 
         #[expect(
             clippy::cast_possible_truncation,
             clippy::cast_sign_loss,
-            reason = "sensor ranges within u16"
+            reason = "values within bounds"
         )]
-        let (co2_u16, humidity_u16, temp_f_u16) = (co2 as u16, humidity as u16, temp_f as u16);
+        let (co2_u16, humidity_u8, temp_f_i16) =
+            (co2 as u16, humidity as u8, fahrenheit(temp_c) as i16);
 
         match btn_rx.try_receive() {
             Ok(ButtonState::A) => {
                 info!("Button A: Display Temp F");
                 let (display_ms, units) = (2750, "F");
-                display_specific(temp_f_u16, display_ms, &mut matrix, units).await;
+                display_specific(temp_f_i16.cast_unsigned(), display_ms, &mut matrix, units).await;
             }
             Ok(ButtonState::B) => {
                 info!("Button B: Display CO2 PPM");
@@ -116,17 +80,11 @@ pub async fn display_task(mut matrix: LedMatrix<Output<'static>, ROWS, COLS>) {
             Ok(ButtonState::C) => {
                 info!("Button C: Display Humidity %");
                 let (display_ms, units) = (2750, "%");
-                display_specific(humidity_u16, display_ms, &mut matrix, units).await;
+                display_specific(humidity_u8.into(), display_ms, &mut matrix, units).await;
             }
             // Only possible error is TryReceiveError, indicating an empty buffer
             Err(_) => {
-                display_dash(
-                    co2_u16 as usize,
-                    humidity_u16 as usize,
-                    temp_f_u16 as usize,
-                    &mut matrix,
-                )
-                .await;
+                display_dash(co2_u16, humidity_u8, temp_f_i16, &mut matrix).await;
             }
         }
     }
