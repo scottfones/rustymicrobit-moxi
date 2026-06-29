@@ -12,7 +12,7 @@ mod tests {
 
     #[test]
     fn intervals() {
-        assert_eq!(PowerMode::High.interval(), Duration::from_secs(10));
-        assert_eq!(PowerMode::Low.interval(), Duration::from_secs(30));
+        defmt::assert_eq!(PowerMode::High.interval(), Duration::from_secs(10));
+        defmt::assert_eq!(PowerMode::Low.interval(), Duration::from_secs(30));
     }
 }

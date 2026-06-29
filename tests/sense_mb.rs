@@ -23,7 +23,7 @@ mod tests {
         let id0 = unsafe {
             core::ptr::read_volatile(core::ptr::with_exposed_provenance::<u32>(0x1000_0060))
         };
-        assert_ne!(id0, 0);
+        defmt::assert_ne!(id0, 0);
     }
 
     #[test]
@@ -32,7 +32,6 @@ mod tests {
         let mb_temp = unsafe { TEMP::steal() };
         let mut sensor = Temp::new(mb_temp, Irqs);
         let temp_celsius: f32 = sensor.read().await.to_num();
-        defmt::info!("mb temp: {} C", temp_celsius);
-        assert!(temp_celsius > 18.0 && temp_celsius < 26.0);
+        defmt::assert!(temp_celsius > 18.0 && temp_celsius < 26.0);
     }
 }
