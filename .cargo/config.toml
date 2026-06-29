@@ -8,13 +8,18 @@ runner = [
   "{t} {L} {s}",
 ]
 
-rustflags = [
-  "-C", "link-arg=-Tlink.x",
-  "-C", "link-arg=-Tdefmt.x",
-]
+rustflags = ["-C", "link-arg=-Tlink.x", "-C", "link-arg=-Tdefmt.x"]
 
 [build]
 target = "thumbv7em-none-eabihf"
 
 [env]
 DEFMT_LOG = "debug"
+
+[alias]
+test-quiet = [
+  "test",
+  "--config",
+  'target.thumbv7em-none-eabihf.runner=["probe-rs", "run", "--chip", "nRF52833_xxAA", "--log-format", "{t} {L} {s}", "--stack-frame-limit", "0"]',
+]
+
